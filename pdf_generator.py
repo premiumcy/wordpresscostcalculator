@@ -1,19 +1,25 @@
 # pdf_generator.py
 # Bu dosya, tüm projede kullanılan PDF oluşturma fonksiyonlarını içerir.
+# WordPress entegrasyonu için gerekli olan PDF'leri bu modül oluşturacaktır.
 
 import io
 import math
 from datetime import datetime
 import pandas as pd
+import base64
+import requests
+from PIL import Image as PILImage
 from reportlab.lib.pagesizes import A4
 from reportlab.lib import colors
 from reportlab.platypus import Table, TableStyle, Paragraph, Spacer, SimpleDocTemplate, Image, PageBreak, KeepTogether
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
 from reportlab.lib.units import mm
-from reportlab.pdfbase.pdfmetrics import stringWidth
-from .config import COMPANY_INFO, FIYATLAR, MATERIAL_INFO_ITEMS, TRANSLATIONS, VAT_RATE
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
+from .config import FIYATLAR, COMPANY_INFO, MATERIAL_INFO_ITEMS, TRANSLATIONS, VAT_RATE
 from .utils import clean_invisible_chars, format_currency, calculate_rounded_up_cost, get_company_logo_base64
+
 
 # --- Ortak PDF Yardımcı Fonksiyonları ---
 def draw_pdf_header_and_footer_common(canvas_obj, doc, customer_info, company_info, logo_data_b64, language_code):
@@ -21,7 +27,6 @@ def draw_pdf_header_and_footer_common(canvas_obj, doc, customer_info, company_in
     Tüm PDF sayfaları için ortak başlık ve altbilgiyi çizer.
     """
     canvas_obj.saveState()
-    canvas_obj.setFont(doc.main_font, 7)
 
     # Header - Sol üstte logo ve Sağ üstte şirket bilgileri
     if logo_data_b64:
@@ -60,43 +65,123 @@ def draw_pdf_header_and_footer_common(canvas_obj, doc, customer_info, company_in
 
 
 # --- Ek PDF Oluşturma Fonksiyonları ---
-def _create_appendix_elements(key, data, styles, language_code):
+def _create_solar_appendix_elements(styles, project_details):
     """
-    Çeviri sözlüğünden veriyi çekerek ortak bir appendix öğesi oluşturur.
+    Güneş Enerjisi Sistemi eki için öğeleri oluşturur (İngilizce-Yunanca).
     """
-    en_key = key
-    tr_key = TRANSLATIONS[en_key][0]
-    gr_key = TRANSLATIONS[en_key][1]
+    en_key = "B: SOLAR ENERGY SYSTEM"
+    gr_key = "ΠΑΡΑΡΤΗΜΑ Β: ΣΥΣΤΗΜΑ ΗΛΙΑΚΗΣ ΕΝΕΡΓΕΙΑΣ"
     
-    heading_text = f"APPENDIX {key.split(' ')[1]}: {en_key.upper()} / ΠΑΡΑΡΤΗΜΑ {key.split(' ')[1]}: {gr_key}"
+    heading_text = f"APPENDIX {en_key.split(' ')[1]}: {en_key.upper()} / {gr_key}"
     elements = [
         PageBreak(),
         Paragraph(clean_invisible_chars(heading_text), styles['Heading']),
         Spacer(1, 8*mm),
+        Paragraph(clean_invisible_chars(f"Below are the details for the included <b>{project_details['solar_kw']} kW</b> Solar Energy System. The price for this system is handled separately from the main house payment plan.<br/><br/>Ακολουθούν οι λεπτομέρειες για το συμπεριλαμβανόμενο Σύστημα Ηλιακής Ενέργειας <b>{project_details['solar_kw']} kW</b>. Η τιμή για αυτό το σύστημα διαχειρίζεται ξεχωριστά από το πρόγραμμα πληρωμών του κυρίως σπιτιού."), styles['NormalBilingual']),
+        Spacer(1, 8*mm),
     ]
 
-    # Dinamik metinler ve tablolar burada oluşturulabilir
-    # Örneğin: Solar veya Heating malzemeleri
-    if key == "B: SOLAR ENERGY SYSTEM":
-        solar_materials = [
-            [clean_invisible_chars("<b>Component / Εξάρτημα</b>"), clean_invisible_chars("<b>Description / Περιγραφή</b>")],
-            [clean_invisible_chars("Solar Panels / Ηλιακοί Συλλέκτες"), clean_invisible_chars(f"{data['solar_kw']} kW High-Efficiency Monocrystalline Panels")],
-            [clean_invisible_chars("Inverter / Μετατροπέας"), clean_invisible_chars("Hybrid Inverter with Grid-Tie Capability")],
-            # ... diğer malzemeler ...
-        ]
-        table_style = TableStyle([
-            ('BACKGROUND', (0,0), (-1,0), colors.HexColor("#4a5568")),
-            ('TEXTCOLOR', (0,0), (-1,0), colors.whitesmoke),
-            ('GRID', (0,0), (-1,-1), 1, colors.grey),
-            ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
-            ('LEFTPADDING', (0,0), (-1,-1), 6),
-            ('BOTTOMPADDING', (0,0), (-1,-1), 6),
+    solar_materials = [
+        [clean_invisible_chars("<b>Component / Εξάρτημα</b>"), clean_invisible_chars("<b>Description / Περιγραφή</b>")],
+        [clean_invisible_chars("Solar Panels / Ηλιακοί Συλλέκτες"), clean_invisible_chars(f"{project_details['solar_kw']} kW High-Efficiency Monocrystalline Panels")],
+        [clean_invisible_chars("Inverter / Μετατροπέας"), clean_invisible_chars("Hybrid Inverter with Grid-Tie Capability")],
+        [clean_invisible_chars("Batteries / Μπαταρίες"), clean_invisible_chars("Lithium-Ion Battery Storage System (optional, priced separately)")],
+        [clean_invisible_chars("Mounting System / Σύστημα Στήριξης"), clean_invisible_chars("Certified mounting structure for roof installation")],
+        [clean_invisible_chars("Cabling & Connectors / Καλωδίωση & Συνδέσεις"), clean_invisible_chars("All necessary DC/AC cables, MC4 connectors, and safety switches")],
+        [clean_invisible_chars("Installation & Commissioning / Εγκατάσταση & Θέση σε Λειτουργία"), clean_invisible_chars("Full professional installation and system commissioning")],
+    ]
+    table_data = [[Paragraph(clean_invisible_chars(cell), styles['NormalBilingual']) for cell in row] for row in solar_materials]
+    elements.append(Table(table_data, colWidths=[60*mm, 110*mm]))
+    
+    elements.append(Spacer(1, 12*mm))
+    elements.append(Paragraph(clean_invisible_chars("Total Price (Solar System) / Συνολική Τιμή (Ηλιακό Σύστημα)"), styles['Heading']))
+    elements.append(Paragraph(format_currency(project_details['solar_price']), styles['PriceTotal']))
+    return elements
+
+def _create_heating_appendix_elements(styles):
+    """
+    Yerden Isıtma Sistemi eki için öğeleri oluşturur (İngilizce-Yunanca).
+    """
+    en_key = "C: FLOOR HEATING SYSTEM"
+    gr_key = "ΠΑΡΑΡΤΗΜΑ Γ: ΣΥΣΤΗΜΑ ΕΝΔΟΔΑΠΕΔΙΑΣ ΘΕΡΜΑΝΣΗΣ"
+    
+    heading_text = f"APPENDIX {en_key.split(' ')[1]}: {en_key.upper()} / {gr_key}"
+    elements = [
+        PageBreak(),
+        Paragraph(clean_invisible_chars(heading_text), styles['Heading']),
+        Spacer(1, 8*mm),
+        Paragraph(clean_invisible_chars("Below are the standard materials included in the Floor Heating System:<br/><br/>Ακολουθούν τα στάνταρ υλικά που περιλαμβάνονται στο Σύστημα Ενδοδαπέδιας Θέρμανσης:"), styles['NormalBilingual']),
+        Spacer(1, 4*mm),
+    ]
+    heating_materials_en_lines = [
+        "Nano Heat Paint", "48V 2000W Transformer", "Thermostat Control Unit",
+        "Wiring and Connection Terminals", "Insulation Layers", "Subfloor Preparation Materials"
+    ]
+    heating_materials_gr_lines = [
+        "Νάνο Θερμική Βαφή", "Μετασχηματιστής 48V 2000W", "Μονάδα Ελέγχου Θερμοστάτη",
+        "Καλωδίωση και Τερματικά Σύνδεσης", "Στρώσεις Μόνωσης", "Υλικά Προετοιμασίας Υποδαπέδου"
+    ]
+    
+    heating_materials = [
+        ["<b>Component / Εξάρτημα</b>", "<b>Description / Περιγραφή</b>"],
+    ]
+    for en_mat, gr_mat in zip(heating_materials_en_lines, heating_materials_gr_lines):
+        heating_materials.append([
+            Paragraph(clean_invisible_chars(en_mat) + " / " + clean_invisible_chars(gr_mat), styles['NormalBilingual'])
         ])
-        table_data = [[Paragraph(clean_invisible_chars(cell), styles['NormalBilingual']) for cell in row] for row in solar_materials]
-        elements.append(Table(table_data, colWidths=[60*mm, 110*mm], style=table_style))
+
+    table_data = [[Paragraph(clean_invisible_chars(cell), styles['NormalBilingual']) for cell in row] for row in heating_materials]
+    elements.append(Table(table_data, colWidths=[70*mm, 100*mm]))
     
-    # Diğer appendix tipleri için de benzer mantık eklenebilir
+    elements.append(Spacer(1, 8*mm))
+    elements.append(Paragraph(clean_invisible_chars("Note: Final material selection and detailed specifications will be confirmed during the design phase based on specific project requirements.<br/><br/>Σημείωση: Η τελική επιλογή υλικών και οι λεπτομερείς προδιαγραφές θα επιβεβαιωθούν κατά τη φάση του σχεδιασμού με βάση τις συγκεκριμένες απαιτήσεις του έργου."), styles['NormalBilingual']))
+    return elements
+
+
+def _create_aether_appendix_elements(styles, project_details):
+    """
+    Aether paketi eki için öğeleri oluşturur (İngilizce-Yunanca).
+    """
+    en_key = "D: AETHER PACKAGE"
+    gr_key = "ΠΑΡΑΡΤΗΜΑ Δ: ΠΑΚΕΤΟ AETHER"
     
+    heading_text = f"APPENDIX {en_key.split(' ')[1]}: {en_key.upper()} / {gr_key}"
+    elements = [
+        PageBreak(),
+        Paragraph(clean_invisible_chars(heading_text), styles['Heading']),
+        Spacer(1, 8*mm),
+        Paragraph(clean_invisible_chars(f"Below are the details for the included Aether Package. This package offers a comprehensive upgrade to the standard features.<br/><br/>Ακολουθούν οι λεπτομέρειες για το συμπεριλαμβανόμενο Πακέτο Aether. Αυτό το πακέτο προσφέρει μια ολοκληρωμένη αναβάθμιση στις στάνταρ λειτουργίες."), styles['NormalBilingual']),
+        Spacer(1, 8*mm),
+    ]
+
+    aether_materials = [
+        [clean_invisible_chars("<b>Component / Εξάρτημα</b>"), clean_invisible_chars("<b>Description / Περιγραφή</b>")],
+    ]
+    
+    # Aether paketinin tüm bileşenlerini dinamik olarak ekle
+    # Bu metinler config.py'den çekilmelidir.
+    aether_items = [
+        "smart_home_systems_info", "white_goods_total_price", "sofa_total_price", "security_camera_total_price",
+        "exterior_cladding_price_per_m2", "bedroom_set_total_price", "terrace_laminated_wood_flooring_price_per_m2",
+        "porcelain_tile_m2_price", "concrete_panel_floor_price_per_m2", "premium_faucets_total_price",
+        "designer_furniture_total_price", "italian_sofa_total_price", "inclass_chairs_unit_price",
+        "exterior_wood_cladding_m2_price", "brushed_grey_granite_countertops_price_m2_avg"
+    ]
+    
+    for item_key in aether_items:
+        en_desc = MATERIAL_INFO_ITEMS.get(item_key)
+        gr_desc = TRANSLATIONS.get(en_desc, ["", ""])[1]
+        aether_materials.append([
+            Paragraph(clean_invisible_chars(en_desc), styles['NormalBilingual']),
+            Paragraph(clean_invisible_chars(gr_desc), styles['NormalBilingual'])
+        ])
+
+    table_data = [[Paragraph(clean_invisible_chars(cell), styles['NormalBilingual']) for cell in row] for row in aether_materials]
+    elements.append(Table(table_data, colWidths=[70*mm, 100*mm]))
+    
+    elements.append(Spacer(1, 12*mm))
+    elements.append(Paragraph(clean_invisible_chars("Total Price (Aether Package) / Συνολική Τιμή (Πακέτο Aether)"), styles['Heading']))
+    elements.append(Paragraph(format_currency(project_details['aether_package_sales_price']), styles['PriceTotal']))
     return elements
 
 
@@ -118,7 +203,7 @@ def create_customer_proposal_pdf_en_gr(house_price, solar_price, aether_package_
 
     def _proposal_page_callback(canvas_obj, doc):
         draw_pdf_header_and_footer_common(canvas_obj, doc, doc.customer_name, doc.company_name, doc.logo_data_b64, 'en_gr')
-
+    
     doc.onFirstPage = _proposal_page_callback
     doc.onLaterPages = _proposal_page_callback
 
@@ -133,38 +218,34 @@ def create_customer_proposal_pdf_en_gr(house_price, solar_price, aether_package_
     colored_table_header_style = ParagraphStyle(name='ColoredTableHeader', parent=styles['Normal'], fontSize=8, fontName=f"{doc.main_font}-Bold", textColor=colors.white, alignment=TA_LEFT)
     
     elements = []
-    # --- Kapak Sayfası ---
     elements.append(Spacer(1, 40*mm))
-    elements.append(Paragraph(clean_invisible_chars("PREFABRICATED HOUSE PROPOSAL"), title_style))
-    elements.append(Paragraph(clean_invisible_chars("ΠΡΟΤΑΣΗ ΠΡΟΚΑΤΑΣΚΕΥΑΣΜΕΝΟΥ ΣΠΙΤΙΟΥ"), title_style))
+    elements.append(Paragraph(clean_invisible_chars(f"{TRANSLATIONS['PREFABRICATED HOUSE PROPOSAL'][0]} / {TRANSLATIONS['PREFABRICATED HOUSE PROPOSAL'][1]}"), title_style))
     elements.append(Spacer(1, 20*mm))
-    elements.append(Paragraph(clean_invisible_chars(f"For / Για: {customer_info['name']}"), subtitle_style))
+    elements.append(Paragraph(clean_invisible_chars(f"{TRANSLATIONS['For'][0]} / {TRANSLATIONS['For'][1]}: {customer_info['name']}"), subtitle_style))
     if customer_info['company']:
-        elements.append(Paragraph(clean_invisible_chars(f"Company / Εταιρεία: {customer_info['company']}"), subtitle_style))
+        elements.append(Paragraph(clean_invisible_chars(f"{TRANSLATIONS['Company'][0]} / {TRANSLATIONS['Company'][1]}: {customer_info['company']}"), subtitle_style))
     elements.append(Spacer(1, 8*mm))
-    elements.append(Paragraph(clean_invisible_chars(f"Date / Ημερομηνία: {datetime.now().strftime('%d/%m/%Y')}"), subtitle_style))
+    elements.append(Paragraph(clean_invisible_chars(f"{TRANSLATIONS['Date'][0]} / {TRANSLATIONS['Date'][1]}: {datetime.now().strftime('%d/%m/%Y')}"), subtitle_style))
     elements.append(PageBreak())
 
-    # --- Müşteri & Proje Bilgileri Bölümü ---
-    elements.append(Paragraph(clean_invisible_chars("CUSTOMER & PROJECT INFORMATION / ΠΛΗΡΟΦΟΡΙΕΣ ΠΕΛΑΤΗ & ΕΡΓΟΥ"), styles['Heading']))
-    elements.append(Paragraph(clean_invisible_chars(f"<b>Room Configuration / Διαμόρφωση Δωματίου:</b> {project_details.get('room_configuration', '')}"), styles['NormalBilingual']))
-    elements.append(Paragraph(clean_invisible_chars(f"<b>Dimensions / Διαστάσεις:</b> {project_details['width']}m x {project_details['length']}m x {project_details['height']}m | <b>Total Area / Συνολική Επιφάνεια:</b> {project_details['area']:.2f} m² | <b>Structure Type / Τύπος Κατασκευής:</b> {project_details['structure_type']}"), styles['NormalBilingual']))
+    elements.append(Paragraph(clean_invisible_chars(f"{TRANSLATIONS['CUSTOMER & PROJECT INFORMATION'][0]} / {TRANSLATIONS['CUSTOMER & PROJECT INFORMATION'][1]}"), styles['Heading']))
+    elements.append(Paragraph(clean_invisible_chars(f"<b>{TRANSLATIONS['Room Configuration'][0]} / {TRANSLATIONS['Room Configuration'][1]}:</b> {project_details.get('room_configuration', '')}"), styles['NormalBilingual']))
+    elements.append(Paragraph(clean_invisible_chars(f"<b>{TRANSLATIONS['Dimensions'][0]} / {TRANSLATIONS['Dimensions'][1]}:</b> {project_details['width']}m x {project_details['length']}m x {project_details['height']}m | <b>{TRANSLATIONS['Total Area'][0]} / {TRANSLATIONS['Total Area'][1]}:</b> {project_details['area']:.2f} m² | <b>{TRANSLATIONS['Structure Type'][0]} / {TRANSLATIONS['Structure Type'][1]}:</b> {project_details['structure_type']}"), styles['NormalBilingual']))
     elements.append(Spacer(1, 8*mm))
 
     customer_info_table_data = [
-        [Paragraph(clean_invisible_chars("<b>Name / Όνομα:</b>"), styles['NormalBilingual']), Paragraph(clean_invisible_chars(f"{customer_info['name']}"), styles['NormalBilingual'])],
-        [Paragraph(clean_invisible_chars("<b>Company / Εταιρεία:</b>"), styles['NormalBilingual']), Paragraph(clean_invisible_chars(f"{customer_info.get('company', '')}"), styles['NormalBilingual'])],
-        [Paragraph(clean_invisible_chars("<b>Address / Διεύθυνση:</b>"), styles['NormalBilingual']), Paragraph(clean_invisible_chars(f"{customer_info.get('address', '')}"), styles['NormalBilingual'])],
-        [Paragraph(clean_invisible_chars("<b>Phone / Τηλέφωνο:</b>"), styles['NormalBilingual']), Paragraph(clean_invisible_chars(f"{customer_info.get('phone', '')}"), styles['NormalBilingual'])],
-        [Paragraph(clean_invisible_chars("<b>ID/Passport No / Αρ. Ταυτότητας/Διαβατηρίου:</b>"), styles['NormalBilingual']), Paragraph(clean_invisible_chars(f"{customer_info.get('id_no', '')}"), styles['NormalBilingual'])],
+        [Paragraph(clean_invisible_chars(f"<b>{TRANSLATIONS['Name'][0]} / {TRANSLATIONS['Name'][1]}:</b>"), styles['NormalBilingual']), Paragraph(clean_invisible_chars(f"{customer_info['name']}"), styles['NormalBilingual'])],
+        [Paragraph(clean_invisible_chars(f"<b>{TRANSLATIONS['Company'][0]} / {TRANSLATIONS['Company'][1]}:</b>"), styles['NormalBilingual']), Paragraph(clean_invisible_chars(f"{customer_info.get('company', '')}"), styles['NormalBilingual'])],
+        [Paragraph(clean_invisible_chars(f"<b>{TRANSLATIONS['Address'][0]} / {TRANSLATIONS['Address'][1]}:</b>"), styles['NormalBilingual']), Paragraph(clean_invisible_chars(f"{customer_info.get('address', '')}"), styles['NormalBilingual'])],
+        [Paragraph(clean_invisible_chars(f"<b>{TRANSLATIONS['Phone'][0]} / {TRANSLATIONS['Phone'][1]}:</b>"), styles['NormalBilingual']), Paragraph(clean_invisible_chars(f"{customer_info.get('phone', '')}"), styles['NormalBilingual'])],
+        [Paragraph(clean_invisible_chars(f"<b>{TRANSLATIONS['ID/Passport No'][0]} / {TRANSLATIONS['ID/Passport No'][1]}:</b>"), styles['NormalBilingual']), Paragraph(clean_invisible_chars(f"{customer_info.get('id_no', '')}"), styles['NormalBilingual'])],
     ]
     customer_info_table = Table(customer_info_table_data, colWidths=[65*mm, 105*mm])
     customer_info_table.setStyle(TableStyle([('VALIGN', (0,0), (-1,-1), 'TOP'), ('LEFTPADDING', (0,0), (-1,-1), 0), ('BOTTOMPADDING', (0,0), (-1,-1), 2)]))
     elements.append(customer_info_table)
     elements.append(Spacer(1, 8*mm))
 
-    # --- Teknik Özellikler Bölümü ---
-    elements.append(Paragraph(clean_invisible_chars("TECHNICAL SPECIFICATIONS / ΤΕΧΝΙΚΑ ΧΑΡΑΚΤΗΡΙΣΤΙΚΑ"), styles['Heading']))
+    elements.append(Paragraph(clean_invisible_chars(f"{TRANSLATIONS['TECHNICAL SPECIFICATIONS'][0]} / {TRANSLATIONS['TECHNICAL SPECIFICATIONS'][1]}"), styles['Heading']))
     
     def get_yes_no(value):
         return 'Yes / Ναι' if value else 'No / Όχι'
@@ -174,7 +255,7 @@ def create_customer_proposal_pdf_en_gr(house_price, solar_price, aether_package_
 
     building_structure_details_en_gr = ""
     if project_details['structure_type'] == 'Light Steel':
-        profiles_en_str = ", ".join([f"{p['Profile Type']} ({p['Count']} pieces)" for p in project_details.get('profile_analysis', []) if p['Count'] > 0])
+        profiles_en_str = ", ".join([f"{p['Item']} ({p['Quantity']} pieces)" for p in project_details.get('profile_analysis', []) if p['Quantity'] > 0])
         building_structure_details_en_gr = f"""
         <b>Building structure details:</b><br/>
         Skeleton: Box profile with dimensions of {profiles_en_str} will be used. Antirust will be applied to all box profiles and can be painted with the desired color. All our profile welding works have EN3834 certification in accordance with European standards. The construction operations of the entire building are subject to European standards and EN 1090-1 Light Steel Construction license inspection.
@@ -194,14 +275,14 @@ def create_customer_proposal_pdf_en_gr(house_price, solar_price, aether_package_
         Σκελετός: Ατσάλινος σκελετός σπιτιού με όλες τις απαραίτητες διατομές (κολώνες, δοκάρια), συμπεριλαμβανομένων των εξαρτημάτων σύνδεσης (φλάντζες, βίδες, μπουλόνια), όλα σύμφωνα με τα στατικά σχέδια.<br/>
         Στα μοντέλα με τίτλο ιδιοκτησίας και οικοδομική άδεια θα χρησιμοποιηθεί βαρύ μέταλλο HEA120 Ή HEA160. Όλες οι μη γαλβανισμένες μεταλλικές επιφάνειες θα αμμοβολιστούν σύμφωνα με το σουηδικό πρότυπο Sa 2.5 και θα επικαλυφθούν με αστάρι φωσφορικού ψευδαργύρου πάχους 80μm.<br/>
         Αντισκωριακή προστασία θα εφαρμοστεί σε όλα τα προφίλ και μπορεί να βαφτεί στο επιθυμητό χρώμα.<br/>
-        Όλες οι εργασίες συγκόλλησης προφίλ μας διαθέτουν πιστοποιητικό EN3834 σύμφωνα με τα ευρωπαϊκά πρότυπα. Όλες οι διαδικασίες κατασκευής του κτιρίου υπόκεινται σε ευρωπαϊκά πρότυπα και επιθεώρηση άδειας κατασκευής EN 1090-1 Steel Construction.
+        Όλες οι εργασίες συγκόλλησης προφίλ μας διαθέτουν πιστοποιητικό EN3834 σύμφωνα με τα ευρωπαϊκά πρότυπα. Όλες οι διαδικασίες κατασκευής του κτιρίου υπόκεινται σε ευρωπαϊκά πρότυπα και επιθεώρηση άδειας κατασκευασίας EN 1090-1 Steel Construction.
         """
     building_structure_table_data = [
-        [Paragraph('<b>Construction Type / Τύπος Κατασκευής</b>', styles['NormalBilingual']), Paragraph(project_details['structure_type'], styles['NormalBilingual'])],
-        [Paragraph('<b>Steel Structure Details / Λεπτομέρειες Χαλύβδινης Κατασκευής</b>', styles['NormalBilingual']), Paragraph(clean_invisible_chars(building_structure_details_en_gr), styles['NormalBilingual'])],
-        [Paragraph('<b>Interior Walls / Εσωτερικοί Τοίχοι</b>', styles['NormalBilingual']), Paragraph(clean_invisible_chars(INTERIOR_WALLS_DESCRIPTION_EN_GR), styles['NormalBilingual']) if project_details['plasterboard_interior'] or project_details['plasterboard_all'] else Paragraph(clean_invisible_chars("Not Included / Δεν περιλαμβάνεται"), styles['NormalBilingual'])],
-        [Paragraph('<b>Roof / Στέγη</b>', styles['NormalBilingual']), Paragraph(clean_invisible_chars(ROOF_DESCRIPTION_EN_GR), styles['NormalBilingual'])],
-        [Paragraph('<b>Exterior Walls / Εξωτερικοί Τοίχοι</b>', styles['NormalBilingual']), Paragraph(clean_invisible_chars(EXTERIOR_WALLS_DESCRIPTION_EN_GR), styles['NormalBilingual']) if project_details['facade_sandwich_panel_included'] else Paragraph(clean_invisible_chars("Not Included / Δεν περιλαμβάνεται"), styles['NormalBilingual'])],
+        [Paragraph(clean_invisible_chars(f"<b>{TRANSLATIONS['Construction Type'][0]} / {TRANSLATIONS['Construction Type'][1]}</b>"), styles['NormalBilingual']), Paragraph(clean_invisible_chars(project_details['structure_type']), styles['NormalBilingual'])],
+        [Paragraph(clean_invisible_chars(f"<b>{TRANSLATIONS['Steel Structure Details'][0]} / {TRANSLATIONS['Steel Structure Details'][1]}</b>"), styles['NormalBilingual']), Paragraph(clean_invisible_chars(building_structure_details_en_gr), styles['NormalBilingual'])],
+        [Paragraph(clean_invisible_chars(f"<b>{TRANSLATIONS['Interior Walls'][0]} / {TRANSLATIONS['Interior Walls'][1]}</b>"), styles['NormalBilingual']), Paragraph(clean_invisible_chars(INTERIOR_WALLS_DESCRIPTION_EN_GR), styles['NormalBilingual']) if project_details['plasterboard_interior'] or project_details['plasterboard_all'] else Paragraph(clean_invisible_chars("Not Included / Δεν περιλαμβάνεται"), styles['NormalBilingual'])],
+        [Paragraph(clean_invisible_chars(f"<b>{TRANSLATIONS['Roof'][0]} / {TRANSLATIONS['Roof'][1]}</b>"), styles['NormalBilingual']), Paragraph(clean_invisible_chars(ROOF_DESCRIPTION_EN_GR), styles['NormalBilingual'])],
+        [Paragraph(clean_invisible_chars(f"<b>{TRANSLATIONS['Exterior Walls'][0]} / {TRANSLATIONS['Exterior Walls'][1]}</b>"), styles['NormalBilingual']), Paragraph(clean_invisible_chars(EXTERIOR_WALLS_DESCRIPTION_EN_GR), styles['NormalBilingual']) if project_details['facade_sandwich_panel_included'] else Paragraph(clean_invisible_chars("Not Included / Δεν περιλαμβάνεται"), styles['NormalBilingual'])],
     ]
     building_materials_table = Table(building_structure_table_data, colWidths=[60*mm, 110*mm])
     building_materials_table.setStyle(TableStyle([('VALIGN', (0,0), (-1,-1), 'TOP'), ('LEFTPADDING', (0,0), (-1,-1), 0), ('BOTTOMPADDING', (0,0), (-1,-1), 2)]))
@@ -211,32 +292,34 @@ def create_customer_proposal_pdf_en_gr(house_price, solar_price, aether_package_
     # --- Teknik Özellikler - İç Mekan, Yalıtım ve Doğramalar ---
     interior_insulation_table_data = []
     
-    # Interior Covering
     floor_covering_text = project_details.get('floor_covering_type', 'N/A')
     interior_insulation_table_data.append([
-        Paragraph('<b>Interior / Εσωτερικό</b>', styles['NormalBilingual']),
-        Paragraph(clean_invisible_chars(f"Floor Covering: {floor_covering_text}."), styles['NormalBilingual'])
+        Paragraph(clean_invisible_chars(f"<b>{TRANSLATIONS['Interior'][0]} / {TRANSLATIONS['Interior'][1]}</b>"), styles['NormalBilingual']),
+        Paragraph(clean_invisible_chars(f"{TRANSLATIONS['Floor Covering'][0]}: {floor_covering_text}."), styles['NormalBilingual'])
     ])
     
-    # Insulation
-    insulation_text = f"Floor Insulation: {get_yes_no_empty(project_details['insulation_floor'])}. Wall Insulation: {get_yes_no_empty(project_details['insulation_wall'])}."
+    insulation_text = f"{TRANSLATIONS['Floor Insulation'][0]}: {get_yes_no_empty(project_details['insulation_floor'])}. {TRANSLATIONS['Wall Insulation'][0]}: {get_yes_no_empty(project_details['insulation_wall'])}."
     interior_insulation_table_data.append([
-        Paragraph('<b>Insulation / Μόνωση</b>', styles['NormalBilingual']),
+        Paragraph(clean_invisible_chars(f"<b>{TRANSLATIONS['Insulation'][0]} / {TRANSLATIONS['Insulation'][1]}</b>"), styles['NormalBilingual']),
         Paragraph(clean_invisible_chars(insulation_text), styles['NormalBilingual'])
     ])
     
-    # Floor Insulation Materials (if included)
     if project_details['insulation_floor']:
         floor_insulation_details_text = [FLOOR_INSULATION_MATERIALS_EN_GR]
         if project_details.get('skirting_length_val', 0) > 0:
             floor_insulation_details_text.append(clean_invisible_chars(f"• Skirting / Σοβατεπί ({project_details['skirting_length_val']:.2f} m)"))
         if project_details.get('laminate_flooring_m2_val', 0) > 0:
             floor_insulation_details_text.append(clean_invisible_chars(f"• Laminate Flooring 12mm / Laminate Δάπεδο 12mm ({project_details['laminate_flooring_m2_val']:.2f} m²)"))
-        # Add other floor insulation materials here...
+        if project_details.get('under_parquet_mat_m2_val', 0) > 0:
+            floor_insulation_details_text.append(clean_invisible_chars(f"• Under Parquet Mat 4mm / Υπόστρωμα Πακέτου 4mm ({project_details['under_parquet_mat_m2_val']:.2f} m²)"))
+        if project_details.get('osb2_18mm_count_val', 0) > 0:
+            floor_insulation_details_text.append(clean_invisible_chars(f"• OSB2 18mm or Concrete Panel 18mm / OSB2 18mm ή Πάνελ Σκυροδέματος 18mm ({project_details['osb2_18mm_count_val']} pcs)"))
+        if project_details.get('galvanized_sheet_m2_val', 0) > 0:
+            floor_insulation_details_text.append(clean_invisible_chars(f"• 5mm Galvanized Sheet / 5mm Γαλβανισμένο Φύλλο ({project_details['galvanized_sheet_m2_val']:.2f} m²)"))
         floor_insulation_details_text.append(clean_invisible_chars("<i>Note: Insulation thickness can be increased. Ceramic coating can be preferred. (without concrete, special floor system)</i>"))
         
         interior_insulation_table_data.append([
-            Paragraph('<b>Floor Insulation Materials / Υλικά Μόνωσης Δαπέδου:</b>', styles['NormalBilingual']),
+            Paragraph(clean_invisible_chars(f"<b>{TRANSLATIONS['Floor Insulation Materials'][0]} / {TRANSLATIONS['Floor Insulation Materials'][1]}:</b>"), styles['NormalBilingual']),
             Paragraph("<br/>".join(floor_insulation_details_text), styles['NormalBilingual'])
         ])
 
@@ -245,7 +328,6 @@ def create_customer_proposal_pdf_en_gr(house_price, solar_price, aether_package_
     elements.append(interior_insulation_table)
     elements.append(Spacer(1, 5*mm))
 
-    # Openings (Windows and Doors)
     openings_text_en_gr = []
     if project_details.get('window_count', 0) > 0:
         openings_text_en_gr.append(f"Windows: {project_details['window_count']} ({project_details.get('window_size_val', 'N/A')} - {project_details.get('window_door_color_val', 'N/A')})")
@@ -270,15 +352,10 @@ def create_customer_proposal_pdf_en_gr(house_price, solar_price, aether_package_
     elements.append(openings_table)
     elements.append(Spacer(1, 5*mm))
 
-    # --- Sayfa Sonu: Teknik Özellikler Bölümünün Kalanı Yeni Sayfada ---
     elements.append(PageBreak())
-
-    # Diğer Teknik Özellikler (Mutfak, Duş/WC, Elektrik, Sıhhi Tesisat, Ekstra Genel İlaveler)
-    elements.append(Paragraph("ADDITIONAL TECHNICAL FEATURES / ΠΡΟΣΘΕΤΑ ΤΕΧΝΙΚΑ ΧΑΡΑΚΤΗΡΙΣΤΙΚΑ", styles['Heading'])) # Yeni başlık
 
     other_features_table_data = []
 
-    # Mutfak
     kitchen_choice = project_details.get('kitchen_choice', 'No Kitchen')
     other_features_table_data.append([
         Paragraph('<b>Kitchen / Κουζίνα</b>', styles['NormalBilingual']),
@@ -290,7 +367,6 @@ def create_customer_proposal_pdf_en_gr(house_price, solar_price, aether_package_
             Paragraph(clean_invisible_chars(KITCHEN_MATERIALS_EN) + "<br/><br/>" + clean_invisible_chars(KITCHEN_MATERIALS_GR), styles['NormalBilingual'])
         ])
 
-    # Duş/WC
     other_features_table_data.append([
         Paragraph('<b>Shower/WC / Ντους/WC</b>', styles['NormalBilingual']),
         Paragraph(clean_invisible_chars(get_yes_no_empty(project_details['shower_wc'])), styles['NormalBilingual'])
@@ -301,7 +377,6 @@ def create_customer_proposal_pdf_en_gr(house_price, solar_price, aether_package_
             Paragraph(clean_invisible_chars(SHOWER_WC_MATERIALS_EN) + "<br/><br/>" + clean_invisible_chars(SHOWER_WC_MATERIALS_GR), styles['NormalBilingual'])
         ])
 
-    # Elektrik ve Sıhhi Tesisat
     other_features_table_data.append([
         Paragraph('<b>Electrical / Ηλεκτρολογικά</b>', styles['NormalBilingual']),
         Paragraph(clean_invisible_chars(get_yes_no_empty(project_details['electrical'])), styles['NormalBilingual'])
@@ -322,16 +397,14 @@ def create_customer_proposal_pdf_en_gr(house_price, solar_price, aether_package_
             Paragraph(clean_invisible_chars(PLUMBING_MATERIALS_EN.strip()) + "<br/><br/>" + clean_invisible_chars(PLUMBING_MATERIALS_GR.strip()), styles['NormalBilingual'])
         ])
 
-    # Ekstra Genel İlaveler
     extra_general_additions_list_en_gr = []
     if project_details['heating']:
         extra_general_additions_list_en_gr.append(clean_invisible_chars(f"Floor Heating: {get_yes_no_empty(project_details['heating'])}"))
     if project_details['solar']:
         extra_general_additions_list_en_gr.append(clean_invisible_chars(f"Solar System: {get_yes_no_empty(project_details['solar'])} ({project_details['solar_kw']} kW)") if project_details['solar'] else '')
     if project_details['wheeled_trailer']:
-        extra_general_additions_list_en_gr.append(clean_invisible_chars(f"Wheeled Trailer: {get_yes_no_empty(project_details['wheeled_trailer'])} ({format_currency(project_details['wheeled_trailer_price'])})") if project_details['wheeled_trailer'] else '')
+        extra_general_additions_list_en_gr.append(clean_invisible_chars(f"Wheeled Trailer: {get_yes_no_empty(project_details['wheeled_trailer'])} ({format_currency(project_details['wheeled_trailer_price'])})" if project_details['wheeled_trailer'] else '')
     
-    # Aether Living'e özel eklenenler
     if project_details['smart_home_systems_option']:
         extra_general_additions_list_en_gr.append(clean_invisible_chars(f"Smart Home Systems: {get_yes_no_empty(project_details['smart_home_systems_option'])}"))
     if project_details['white_goods_fridge_tv_option']:
