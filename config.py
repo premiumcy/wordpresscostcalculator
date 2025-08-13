@@ -1,6 +1,5 @@
 # config.py
 # Bu dosya, uygulamanın tüm sabitlerini ve yapılandırma sözlüklerini içerir.
-# Bu yaklaşım, kodun daha temiz ve yönetilebilir olmasını sağlar.
 
 import re
 
@@ -19,7 +18,6 @@ def clean_invisible_chars(text):
 # ==============================================================================
 
 # LOGO_URL'nin genel erişime açık bir URL olduğundan emin olun.
-# Bu URL, şirket logosunu PDF'lere dinamik olarak çekmek için kullanılır.
 LOGO_URL = "https://drive.google.com/uc?export=download&id=1RD27Gas035iUqe4Ucl3phFwxZPWfzlzn"
 
 COMPANY_INFO = {
