@@ -5,7 +5,7 @@ import math
 import pandas as pd
 import re
 from .config import FIYATLAR, MONTHLY_ACCOUNTING_EXPENSES, MONTHLY_OFFICE_RENT, FIRE_RATE, VAT_RATE, MATERIAL_INFO_ITEMS, OSB_PANEL_AREA_M2, GYPSUM_BOARD_UNIT_AREA_M2, GLASS_WOOL_M2_PER_PACKET
-from .utils import calculate_rounded_up_cost, calculate_area
+from .utils import calculate_rounded_up_cost, calculate_area, clean_invisible_chars, format_currency
 
 def calculate_costs_detailed(project_inputs, areas):
     """
@@ -22,7 +22,6 @@ def calculate_costs_detailed(project_inputs, areas):
     profile_analysis_details = []
     
     # --- 1. Yapısal Maliyetler (Çelik, Kaynak, Bağlantı Elemanları) ---
-    # Koruyucu boya maliyeti 0 olsa bile bilgi olarak eklenir.
     costs.append({'Item': MATERIAL_INFO_ITEMS['protective_automotive_paint_info'], 'Quantity': 'N/A', 'Unit Price (€)': 0.0, 'Total (€)': 0.0})
 
     if project_inputs['structure_type'] == 'Light Steel':
@@ -45,7 +44,7 @@ def calculate_costs_detailed(project_inputs, areas):
                     total_cost = p_count * cost_per_piece
                     costs.append({'Item': f"{MATERIAL_INFO_ITEMS['steel_skeleton_info']} ({p_type})", 'Quantity': f"{p_count} adet", 'Unit Price (€)': cost_per_piece, 'Total (€)': calculate_rounded_up_cost(total_cost)})
                     profile_analysis_details.append({'Item': p_type, 'Quantity': p_count, 'Unit Price (€)': cost_per_piece, 'Total (€)': calculate_rounded_up_cost(total_cost)})
-        else: # Otomatik hesaplama
+        else:
             auto_100x100_count = math.ceil(floor_area * (12 / 27.0))
             auto_50x50_count = math.ceil(floor_area * (6 / 27.0))
             if auto_100x100_count > 0:
@@ -142,7 +141,7 @@ def calculate_costs_detailed(project_inputs, areas):
             costs.append({'Item': 'OSB2 18mm Panel', 'Quantity': f"{project_inputs['osb2_18mm_count_val']} adet", 'Unit Price (€)': FIYATLAR['osb2_18mm_piece_price'], 'Total (€)': calculate_rounded_up_cost(project_inputs['osb2_18mm_count_val'] * FIYATLAR['osb2_18mm_piece_price'])})
         if project_inputs.get('galvanized_sheet_m2_val', 0) > 0:
             costs.append({'Item': '5mm Galvanized Sheet', 'Quantity': f"{project_inputs['galvanized_sheet_m2_val']:.2f} m²", 'Unit Price (€)': FIYATLAR['galvanized_sheet_m2_price'], 'Total (€)': calculate_rounded_up_cost(project_inputs['galvanized_sheet_m2_val'] * FIYATLAR['galvanized_sheet_m2_price'])})
-        # Plywood döşeme işçiliği (toplam zemin alanı için)
+        
         plywood_flooring_labor_cost = floor_area * FIYATLAR['plywood_flooring_labor_m2']
         costs.append({'Item': 'Plywood Flooring Labor', 'Quantity': f"{floor_area:.2f} m²", 'Unit Price (€)': FIYATLAR['plywood_flooring_labor_m2'], 'Total (€)': calculate_rounded_up_cost(plywood_flooring_labor_cost)})
     
@@ -171,23 +170,23 @@ def calculate_costs_detailed(project_inputs, areas):
     
     if window_count > 0:
         window_cost = window_count * FIYATLAR['aluminum_window_piece']
-        costs.append({'Item': f"Window ({project_inputs['window_size_val']})", 'Quantity': window_count, 'Unit Price (€)': FIYATLAR['aluminum_window_piece'], 'Total (€)': calculate_rounded_up_cost(window_cost)})
+        costs.append({'Item': f"Window ({project_inputs.get('window_size_val', 'N/A')})", 'Quantity': window_count, 'Unit Price (€)': FIYATLAR['aluminum_window_piece'], 'Total (€)': calculate_rounded_up_cost(window_cost)})
     
     if sliding_door_count > 0:
         sliding_door_cost = sliding_door_count * FIYATLAR['sliding_glass_door_piece']
-        costs.append({'Item': f"Sliding Glass Door ({project_inputs['sliding_door_size_val']})", 'Quantity': sliding_door_count, 'Unit Price (€)': FIYATLAR['sliding_glass_door_piece'], 'Total (€)': calculate_rounded_up_cost(sliding_door_cost)})
+        costs.append({'Item': f"Sliding Glass Door ({project_inputs.get('sliding_door_size_val', 'N/A')})", 'Quantity': sliding_door_count, 'Unit Price (€)': FIYATLAR['sliding_glass_door_piece'], 'Total (€)': calculate_rounded_up_cost(sliding_door_cost)})
 
     if wc_window_count > 0:
         wc_window_cost = wc_window_count * FIYATLAR['wc_window_piece']
-        costs.append({'Item': f"WC Window ({project_inputs['wc_window_size_val']})", 'Quantity': wc_window_count, 'Unit Price (€)': FIYATLAR['wc_window_piece'], 'Total (€)': calculate_rounded_up_cost(wc_window_cost)})
+        costs.append({'Item': f"WC Window ({project_inputs.get('wc_window_size_val', 'N/A')})", 'Quantity': wc_window_count, 'Unit Price (€)': FIYATLAR['wc_window_piece'], 'Total (€)': calculate_rounded_up_cost(wc_window_cost)})
 
     if wc_sliding_door_count > 0:
         wc_sliding_door_cost = wc_sliding_door_count * FIYATLAR['wc_sliding_door_piece']
-        costs.append({'Item': f"WC Sliding Door ({project_inputs['wc_sliding_door_size_val']})", 'Quantity': wc_sliding_door_count, 'Unit Price (€)': FIYATLAR['wc_sliding_door_piece'], 'Total (€)': calculate_rounded_up_cost(wc_sliding_door_cost)})
+        costs.append({'Item': f"WC Sliding Door ({project_inputs.get('wc_sliding_door_size_val', 'N/A')})", 'Quantity': wc_sliding_door_count, 'Unit Price (€)': FIYATLAR['wc_sliding_door_piece'], 'Total (€)': calculate_rounded_up_cost(wc_sliding_door_cost)})
     
     if door_count > 0:
         door_cost = door_count * FIYATLAR['door_piece']
-        costs.append({'Item': f"Door ({project_inputs['door_size_val']})", 'Quantity': door_count, 'Unit Price (€)': FIYATLAR['door_piece'], 'Total (€)': calculate_rounded_up_cost(door_cost)})
+        costs.append({'Item': f"Door ({project_inputs.get('door_size_val', 'N/A')})", 'Quantity': door_count, 'Unit Price (€)': FIYATLAR['door_piece'], 'Total (€)': calculate_rounded_up_cost(door_cost)})
     
     total_doors_windows = window_count + sliding_door_count + wc_window_count + wc_sliding_door_count + door_count
     if total_doors_windows > 0:
@@ -200,18 +199,18 @@ def calculate_costs_detailed(project_inputs, areas):
     kitchen_type_display_tr = 'Mutfak Yok'
     kitchen_included_in_calc = False
 
-    if project_inputs['kitchen_choice'] == 'Standard Kitchen':
+    if project_inputs.get('kitchen_choice', 'No Kitchen') == 'Standard Kitchen':
         kitchen_cost_calc = FIYATLAR['kitchen_installation_standard_piece']
         kitchen_type_display_en_gr = "Yes (Standard)"
         kitchen_type_display_tr = "Var (Standart)"
         kitchen_included_in_calc = True
-        costs.append({'Item': f"Kitchen ({kitchen_type_display_en_gr.split('(')[0].strip()})", 'Quantity': '1 adet', 'Unit Price (€)': FIYATLAR['kitchen_installation_standard_piece'], 'Total (€)': calculate_rounded_up_cost(kitchen_cost_calc)})
-    elif project_inputs['kitchen_choice'] == 'Special Design Kitchen':
+        costs.append({'Item': 'Standard Kitchen Installation', 'Quantity': '1', 'Unit Price (€)': FIYATLAR['kitchen_installation_standard_piece'], 'Total (€)': calculate_rounded_up_cost(kitchen_cost_calc)})
+    elif project_inputs.get('kitchen_choice', 'No Kitchen') == 'Special Design Kitchen':
         kitchen_cost_calc = FIYATLAR['kitchen_installation_special_piece']
         kitchen_type_display_en_gr = "Yes (Special Design)"
         kitchen_type_display_tr = "Var (Özel Tasarım)"
         kitchen_included_in_calc = True
-        costs.append({'Item': f"Kitchen ({kitchen_type_display_en_gr.split('(')[0].strip()})", 'Quantity': '1 adet', 'Unit Price (€)': FIYATLAR['kitchen_installation_special_piece'], 'Total (€)': calculate_rounded_up_cost(kitchen_cost_calc)})
+        costs.append({'Item': 'Special Design Kitchen Installation', 'Quantity': '1', 'Unit Price (€)': FIYATLAR['kitchen_installation_special_piece'], 'Total (€)': calculate_rounded_up_cost(kitchen_cost_calc)})
         
     if project_inputs.get('shower_wc', False):
         shower_wc_cost = FIYATLAR['shower_wc_installation_piece']
@@ -257,7 +256,6 @@ def calculate_costs_detailed(project_inputs, areas):
         aether_package_cost = FIYATLAR.get('aether_package_cost', 0.0)
         costs.append({'Item': f'Aether Package ({project_inputs["aether_package_choice"]})', 'Quantity': '1', 'Unit Price (€)': aether_package_cost, 'Total (€)': aether_package_cost})
         
-        # Ek donanımları da maliyet dökümüne ekleyelim (sabit fiyatları FIYATLAR'da mevcut)
         if project_inputs.get('bedroom_set_option', False):
             costs.append({'Item': MATERIAL_INFO_ITEMS['supportive_headboard_furniture_info'], 'Quantity': 1, 'Unit Price (€)': FIYATLAR['bedroom_set_total_price'], 'Total (€)': calculate_rounded_up_cost(FIYATLAR['bedroom_set_total_price'])})
         if project_inputs.get('brushed_granite_countertops_option', False) and project_inputs.get('brushed_granite_countertops_m2_val', 0) > 0:
@@ -272,14 +270,14 @@ def calculate_costs_detailed(project_inputs, areas):
         if project_inputs.get('concrete_panel_floor_option', False) and project_inputs.get('concrete_panel_floor_m2_val', 0) > 0:
             concrete_panel_cost = project_inputs['concrete_panel_floor_m2_val'] * FIYATLAR['concrete_panel_floor_price_per_m2']
             costs.append({'Item': MATERIAL_INFO_ITEMS['concrete_panel_floor_info'], 'Quantity': f"{project_inputs['concrete_panel_floor_m2_val']:.2f} m²", 'Unit Price (€)': FIYATLAR['concrete_panel_floor_price_per_m2'], 'Total (€)': calculate_rounded_up_cost(concrete_panel_cost)})
+        
         #... Diğer tüm Aether Living opsiyonları da buraya eklenecek ...
-
+    
     # --- 7. Finansal Hesaplamalar ---
     material_subtotal = sum(item['Total (€)'] for item in costs if 'Total (€)' in item)
     waste_cost = calculate_rounded_up_cost(material_subtotal * FIRE_RATE)
     overhead_cost = MONTHLY_ACCOUNTING_EXPENSES + MONTHLY_OFFICE_RENT
 
-    # Ana Ev Fiyatı hesaplaması (solar ve aether paket maliyeti hariç)
     house_subtotal_base = sum([item['Total (€)'] for item in costs if not any(keyword in item['Item'] for keyword in ['Solar', 'Aether'])])
     total_house_cost_before_profit_vat = calculate_rounded_up_cost(house_subtotal_base + waste_cost + overhead_cost)
 
@@ -292,12 +290,11 @@ def calculate_costs_detailed(project_inputs, areas):
 
     total_sales_price = calculate_rounded_up_cost(house_sales_price + solar_cost + aether_package_cost)
 
-    # Finansal özeti oluştur
     financial_summary_data = {
         'Total Material and Labor Cost': material_subtotal,
         f'Waste Cost ({FIRE_RATE*100:.0f}%)': waste_cost,
         'Total Overhead Cost': overhead_cost,
-        'Total Cost Before Profit': total_cost_before_profit_vat,
+        'Total Cost Before Profit': total_house_cost_before_profit_vat,
         f'Profit ({project_inputs.get("profit_rate", [None, 0.20])[0]})': profit,
         'VAT Excluded Sales Price': price_before_vat,
         f'VAT ({VAT_RATE*100:.0f}%)': vat_amount,
@@ -307,14 +304,12 @@ def calculate_costs_detailed(project_inputs, areas):
         'Total Sales Price (VAT Included)': total_sales_price,
     }
 
-    # Tahmini teslimat süresi
     delivery_duration_business_days = math.ceil((floor_area / 27.0) * 35)
     if is_two_story:
         delivery_duration_business_days += math.ceil((floor_area / 27.0) * 15)
     if delivery_duration_business_days < 10:
         delivery_duration_business_days = 10
 
-    # Sonuçları DataFrame ve sözlük olarak hazırla
     costs_df = pd.DataFrame(costs)
     if not costs_df.empty:
         costs_df = costs_df.set_index('Item').reset_index()
@@ -327,7 +322,6 @@ def calculate_costs_detailed(project_inputs, areas):
     else:
         profile_analysis_df = pd.DataFrame(columns=['Item', 'Quantity', 'Unit Price (€)', 'Total (€)'])
 
-    # Sonuç sözlüğünü döndür
     return {
         'costs_df': costs_df,
         'financial_summary': financial_summary_data,
