@@ -28,7 +28,7 @@ app = Flask(__name__)
 # daha sonra sadece WordPress URL'niz ile sınırlandırmanız önerilir)
 CORS(app)
 
-# === GÜVENLÜ E-POSTA AYARLARI (RENDER ORTAM DEĞİŞKENLERİ) ===
+# === GÜVENLİ E-POSTA AYARLARI (RENDER ORTAM DEĞİŞKENLERİ) ===
 # Bu bilgileri Render arayüzünden "Environment Variables" olarak ekleyin.
 MAIL_USERNAME = os.environ.get("MAIL_USERNAME")
 MAIL_PASSWORD = os.environ.get("MAIL_PASSWORD") # Uygulama şifresi
