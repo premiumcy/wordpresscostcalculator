@@ -28,15 +28,13 @@ app = Flask(__name__)
 # daha sonra sadece WordPress URL'niz ile sınırlandırmanız önerilir)
 CORS(app)
 
-# === GÜVENLİK VE E-POSTA AYARLARI ===
-# Bu bilgileri Render ortam değişkenleri (environment variables) olarak
-# saklamanız ŞİDDETLE önerilir. Aşağıdaki satırları kendi bilgilerinizle
-# DOLDURMAYIN. Render'da "Ortam Değişkenleri" bölümünde ekleyin.
+# === GÜVENLÜ E-POSTA AYARLARI (RENDER ORTAM DEĞİŞKENLERİ) ===
+# Bu bilgileri Render arayüzünden "Environment Variables" olarak ekleyin.
 MAIL_USERNAME = os.environ.get("MAIL_USERNAME")
-MAIL_PASSWORD = os.environ.get("MAIL_PASSWORD") # Bu, e-postanızın uygulama şifresi olmalıdır
-MAIL_SERVER = "smtp.your_provider.com" # Örn: smtp.gmail.com
-MAIL_PORT = 587
-# Gönderen ve alıcı adreslerini ayarla
+MAIL_PASSWORD = os.environ.get("MAIL_PASSWORD") # Uygulama şifresi
+MAIL_SERVER = os.environ.get("MAIL_SERVER", "smtp.hostinger.com") # Varsayılan değer eklenmiştir
+MAIL_PORT = int(os.environ.get("MAIL_PORT", 587)) # Varsayılan değer eklenmiştir
+
 SENDER_EMAIL = MAIL_USERNAME
 RECIPIENT_EMAIL_COMPANY = COMPANY_INFO["email"]
 
@@ -45,6 +43,10 @@ def send_email_with_pdf(to_address, subject, body, pdf_data, pdf_filename):
     """
     Belirtilen adrese PDF ekiyle e-posta gönderir.
     """
+    if not all([MAIL_USERNAME, MAIL_PASSWORD, MAIL_SERVER, MAIL_PORT]):
+        print("UYARI: E-posta ayarları eksik. E-posta gönderimi yapılamadı.")
+        return False
+
     msg = MIMEMultipart()
     msg['From'] = SENDER_EMAIL
     msg['To'] = to_address
@@ -88,10 +90,10 @@ def calculate_and_generate_pdfs():
 
         # Gelen verilerle hesaplama motorunu çalıştır
         areas = calculate_area(
-            project_details['width'],
-            project_details['length'],
-            project_details['height'],
-            project_details['is_two_story'],
+            project_details.get('width', 0),
+            project_details.get('length', 0),
+            project_details.get('height', 0),
+            project_details.get('is_two_story', False),
             project_details.get('height_2nd_floor', 0)
         )
         
@@ -106,7 +108,7 @@ def calculate_and_generate_pdfs():
             results['profile_analysis_df'],
             project_details,
             customer_info,
-            results.get('logo_data_b64', None) # Logoyu her PDF için çek
+            results.get('logo_data_b64', None)
         )
         
         # Müşteri Teklifi (seçilen dile göre)
@@ -147,29 +149,29 @@ def calculate_and_generate_pdfs():
 
         # PDF'leri e-posta ile gönder
         email_sent_to_customer = send_email_with_pdf(
-            customer_info['email'],
+            customer_info.get('email', ''),
             "Premium Home Teklifiniz / Your Premium Home Offer",
             "Sayın Müşterimiz, talebiniz üzerine oluşturulan teklifiniz ektedir. / Dear Customer, your offer is attached.",
             customer_proposal_data,
-            f"Customer_Proposal_{clean_invisible_chars(customer_info['name']).replace(' ', '_')}.pdf"
+            f"Customer_Proposal_{clean_invisible_chars(customer_info.get('name', 'General')).replace(' ', '_')}.pdf"
         )
         
         # Şirkete e-posta ile gönder (müşteri verileri ve dahili rapor)
         company_email_body = f"""
         Yeni bir teklif talebi alındı.
 
-        Müşteri Adı: {customer_info['name']}
-        E-posta: {customer_info['email']}
-        Telefon: {customer_info['phone']}
-        Proje Alanı: {project_details['width']}m x {project_details['length']}m
+        Müşteri Adı: {customer_info.get('name', '')}
+        E-posta: {customer_info.get('email', '')}
+        Telefon: {customer_info.get('phone', '')}
+        Proje Alanı: {project_details.get('width', 0)}m x {project_details.get('length', 0)}m
 
         """
         email_sent_to_company = send_email_with_pdf(
             RECIPIENT_EMAIL_COMPANY,
-            f"Yeni Teklif Talebi: {customer_info['name']}",
+            f"Yeni Teklif Talebi: {customer_info.get('name', 'General')}",
             company_email_body,
             internal_pdf_data,
-            f"Internal_Report_{clean_invisible_chars(customer_info['name']).replace(' ', '_')}.pdf"
+            f"Internal_Report_{clean_invisible_chars(customer_info.get('name', 'General')).replace(' ', '_')}.pdf"
         )
         
         if email_sent_to_customer and email_sent_to_company:
