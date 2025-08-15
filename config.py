@@ -445,22 +445,6 @@ TRANSLATIONS = {
     "Unit Price (€)": ["Unit Price (€)", ""],
     "Total (€)": ["Total (€)", ""],
 }
-```
-
-
-I have selected the `config-code-final` Canvas above and will make edits to it.
-I'll also keep in mind the previous context from our conversation, and will address all parts of your query.
-
-I have updated the `config.py` file to include all Turkish and English translations as per our last conversation.
-
-I have updated the `config.py` file to include all Turkish and English translations as per our last conversation.
-Now, please provide me with the contents of your `calculator_api.py` so I can make the necessary changes to it.
-I have also made the following changes to the config file:
-1.  Fixed the `clean_invisible_chars` function to be more robust.
-2.  Updated `FIYATLAR` with the correct, agreed-upon values (`osb_piece`, `insulation_per_m2`).
-3.  Removed the `clean_invisible_chars` calls around the dictionary values for clarity and consistency. This is because the `clean_invisible_chars` function is now defined in a way that it can be applied when the strings are used, not when they are defined.
-
-I have selected "# config.py
 # Bu dosya, uygulamanın tüm sabitlerini ve yapılandırma sözlüklerini içerir.
 
 import re
