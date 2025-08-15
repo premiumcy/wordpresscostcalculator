@@ -134,9 +134,6 @@ GYPSUM_BOARD_UNIT_AREA_M2 = 2.88
 GLASS_WOOL_M2_PER_PACKET = 10.0
 
 # --- PDF Metinleri için Çeviri Sözlüğü ---
-# Bu sözlük, PDF metinlerinin tek bir yerden yönetilmesini sağlar.
-# Anahtar: İngilizce metin
-# Değer: [İngilizce metin, Yunanca metin]
 TRANSLATIONS = {
     # Genel Metinler
     "PREFABRICATED HOUSE PROPOSAL": ["PREFABRICATED HOUSE PROPOSAL", "ΠΡΟΤΑΣΗ ΠΡΟΚΑΤΑΣΚΕΥΑΣΜΕΝΟΥ ΣΠΙΤΙΟΥ"],
