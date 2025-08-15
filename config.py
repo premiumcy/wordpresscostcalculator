@@ -124,7 +124,7 @@ FIYATLAR = {
 }
 
 # --- Malzeme Bilgi Kalemleri (PDF'lerde açıklama için) ---
-MATERIAL_INFO_ITEMS = {
+MATERIAL_INFO_ITEMS = 
     "steel_skeleton_info": "Metal skeleton",
     "protective_automotive_paint_info": "Protective automotive paint",
     "insulation_info": "Insulation",
@@ -198,7 +198,7 @@ MATERIAL_INFO_ITEMS = {
     "aether_package_inclass_chairs_info": "Inclass Chairs (Aether Pack)"),
     "aether_package_exterior_wood_cladding_info": "Exterior Wood Cladding (Wallpaper) (Aether Package)"),
     "aether_package_brushed_grey_granite_countertops_info": "Brushed Gray Kale Granite Kitchen/Bathroom Countertops (Aether Package)"),
-}
+
 " code between  and  in the most up-to-date Canvas "Uygulama Sabitleri (config.py) - Düzeltilmiş" document above and am asking a query about/based on this code below.
 Instructions to follow:
   * Don't output/edit the document if the query is Direct/Simple. For example, if the query asks for a simple explanation, output a direct answer.
