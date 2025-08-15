@@ -223,8 +223,6 @@ TRANSLATIONS = {
 }
 ```
 
-
-I have selected "# config.py
 # Bu dosya, uygulamanın tüm sabitlerini ve yapılandırma sözlüklerini içerir.
 
 import re
