@@ -1,9 +1,14 @@
 # calculator_api.py
 # Bu dosya, WordPress'ten gelen istekleri işleyecek olan ana Python API'sini (backend) içerir.
 
+import sys
+import os
+# Proje kök dizinini Python yoluna ekle
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
+
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-import os
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -17,7 +22,6 @@ import base64
 import io
 
 # Projenin diğer dosyalarını içe aktar
-# Göreceli içe aktarma hatasını gidermek için noktalar (.) kaldırıldı.
 from config import FIYATLAR, COMPANY_INFO, MATERIAL_INFO_ITEMS, TRANSLATIONS
 from pdf_generator import create_internal_cost_report_pdf, create_customer_proposal_pdf_tr, create_customer_proposal_pdf_en_gr, create_sales_contract_pdf
 from calculator import calculate_costs_detailed
@@ -171,7 +175,7 @@ def calculate_and_generate_pdfs():
         if email_sent_to_customer and email_sent_to_company:
             return jsonify({"status": "success", "message": "Teklifler başarıyla oluşturuldu ve e-posta ile gönderildi."}), 200
         else:
-            return jsonify({"status": "error", "message": "E-posta gönderimi başarısız oldu."}), 500
+            return jsonify({"status": "error", "message": "Teklifler oluşturuldu ancak e-posta gönderimi başarısız oldu."}), 500
 
     except Exception as e:
         print(f"Genel hata: {e}")
