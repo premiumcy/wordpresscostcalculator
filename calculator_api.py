@@ -17,11 +17,11 @@ import base64
 import io
 
 # Projenin diğer dosyalarını içe aktar
-# Bu dosyaların aynı dizinde olduğundan emin olun.
-from .config import FIYATLAR, COMPANY_INFO, MATERIAL_INFO_ITEMS, TRANSLATIONS
-from .pdf_generator import create_internal_cost_report_pdf, create_customer_proposal_pdf_tr, create_customer_proposal_pdf_en_gr, create_sales_contract_pdf
-from .calculator import calculate_costs_detailed
-from .utils import clean_invisible_chars, calculate_area, get_company_logo_base64
+# Göreceli içe aktarma hatasını gidermek için noktalar (.) kaldırıldı.
+from config import FIYATLAR, COMPANY_INFO, MATERIAL_INFO_ITEMS, TRANSLATIONS
+from pdf_generator import create_internal_cost_report_pdf, create_customer_proposal_pdf_tr, create_customer_proposal_pdf_en_gr, create_sales_contract_pdf
+from calculator import calculate_costs_detailed
+from utils import clean_invisible_chars, calculate_area, get_company_logo_base64
 
 # Flask uygulamasını başlat ve CORS'u etkinleştir
 app = Flask(__name__)
@@ -98,11 +98,9 @@ def calculate_and_generate_pdfs():
             project_details.get('height_2nd_floor', 0)
         )
         
-        # Bu fonksiyon, hesaplamaları ve finansal özetleri döndürür
         results = calculate_costs_detailed(project_details, areas)
 
         # PDF'leri oluştur
-        # Dahili Rapor (şirket için)
         internal_pdf_data = create_internal_cost_report_pdf(
             results['costs_df'],
             results['financial_summary'],
@@ -112,7 +110,6 @@ def calculate_and_generate_pdfs():
             results.get('logo_data_b64', None)
         )
         
-        # Müşteri Teklifi (seçilen dile göre)
         if project_details.get('pdf_language', 'tr') == 'tr':
             customer_proposal_data = create_customer_proposal_pdf_tr(
                 results['house_sales_price'],
@@ -136,7 +133,6 @@ def calculate_and_generate_pdfs():
                 results.get('logo_data_b64', None)
             )
 
-        # Satış Sözleşmesi (şirket için, İngilizce)
         sales_contract_data = create_sales_contract_pdf(
             customer_info,
             results['house_sales_price'],
@@ -148,7 +144,6 @@ def calculate_and_generate_pdfs():
             results.get('logo_data_b64', None)
         )
 
-        # PDF'leri e-posta ile gönder
         email_sent_to_customer = send_email_with_pdf(
             customer_info.get('email', ''),
             "Premium Home Teklifiniz / Your Premium Home Offer",
@@ -157,7 +152,6 @@ def calculate_and_generate_pdfs():
             f"Customer_Proposal_{clean_invisible_chars(customer_info.get('name', 'General')).replace(' ', '_')}.pdf"
         )
         
-        # Şirkete e-posta ile gönder (müşteri verileri ve dahili rapor)
         company_email_body = f"""
         Yeni bir teklif talebi alındı.
 
@@ -165,7 +159,6 @@ def calculate_and_generate_pdfs():
         E-posta: {customer_info.get('email', '')}
         Telefon: {customer_info.get('phone', '')}
         Proje Alanı: {project_details.get('width', 0)}m x {project_details.get('length', 0)}m
-
         """
         email_sent_to_company = send_email_with_pdf(
             RECIPIENT_EMAIL_COMPANY,
@@ -178,7 +171,7 @@ def calculate_and_generate_pdfs():
         if email_sent_to_customer and email_sent_to_company:
             return jsonify({"status": "success", "message": "Teklifler başarıyla oluşturuldu ve e-posta ile gönderildi."}), 200
         else:
-            return jsonify({"status": "error", "message": "Teklifler oluşturuldu ancak e-posta gönderimi başarısız oldu."}), 500
+            return jsonify({"status": "error", "message": "E-posta gönderimi başarısız oldu."}), 500
 
     except Exception as e:
         print(f"Genel hata: {e}")
@@ -186,6 +179,4 @@ def calculate_and_generate_pdfs():
         return jsonify({"status": "error", "message": str(e), "traceback": traceback.format_exc()}), 500
 
 if __name__ == '__main__':
-    # Render'da çalışırken bu komutu doğrudan kullanır.
-    # Eğer yerel olarak test ediyorsanız, debug=True ekleyebilirsiniz.
     app.run(host='0.0.0.0', port=os.environ.get("PORT", 5000))
