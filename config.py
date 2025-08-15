@@ -39,9 +39,6 @@ RECIPIENT_EMAIL_COMPANY = COMPANY_INFO["email"]
 
 # E-posta gönderme fonksiyonu
 def send_email_with_pdf(to_address, subject, body, pdf_data, pdf_filename):
-    """
-    Belirtilen adrese PDF ekiyle e-posta gönderir.
-    """
     if not all([MAIL_USERNAME, MAIL_PASSWORD, MAIL_SERVER, MAIL_PORT]):
         print("UYARI: E-posta ayarları eksik. E-posta gönderimi yapılamadı.")
         return False
