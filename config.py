@@ -156,6 +156,7 @@ MATERIAL_INFO_ITEMS = {
     "knauf_guardex_gypsum_board_info": clean_invisible_chars("Knauf Guardex Plasterboard"),
     "satin_plaster_paint_info": clean_invisible_chars("Satin plaster and paint"),
     "supportive_headboard_furniture_info": clean_invisible_chars("Bedheadboard with Supportive Furniture"),
+
     "electrical_cable_info": clean_invisible_chars("Electrical Cables (3x2.5 mm², 3x1.5 mm²)"),
     "electrical_conduits_info": clean_invisible_chars("Spiral Pipes and Ducts for Wiring"),
     "electrical_junction_boxes_info": clean_invisible_chars("Junction Boxes"),
@@ -164,18 +165,21 @@ MATERIAL_INFO_ITEMS = {
     "electrical_sockets_switches_info": clean_invisible_chars("Sockets and Switches"),
     "electrical_lighting_fixtures_info": clean_invisible_chars("Indoor Lighting Fixtures (LED Spotlights / Ceiling Lights)"),
     "electrical_grounding_info": clean_invisible_chars("Grounding System Components"),
+
     "plumbing_pprc_pipes_info": clean_invisible_chars("Hot/Cold PPRC Pipes for Water"),
     "plumbing_faucets_info": clean_invisible_chars("Kitchen and Bathroom Faucets"),
     "plumbing_shower_mixer_info": clean_invisible_chars("Shower Head and Faucet"),
     "plumbing_valves_info": clean_invisible_chars("Main and Intermediate Shut-Off Valves"),
     "plumbing_pvc_pipes_info": clean_invisible_chars("PVC Drain Pipes (50mm / 100mm)"),
     "plumbing_siphons_info": clean_invisible_chars("Siphons and floor drains"),
+
     "wc_toilet_bowl_info": clean_invisible_chars("Toilet & Cistern"),
     "wc_washbasin_info": clean_invisible_chars("Hand Wash Sink & Faucet"),
     "wc_towel_rail_info": clean_invisible_chars("Towel Rail"),
     "wc_mirror_info": clean_invisible_chars("Mirror"),
     "wc_accessories_info": clean_invisible_chars("Bathroom Accessories"),
     "wc_shower_unit_info": clean_invisible_chars("Shower Unit (Shower Head and Faucet)"),
+
     "kitchen_mdf_info": clean_invisible_chars("Glossy White MDF Material"),
     "kitchen_cabinets_info": clean_invisible_chars("Custom-Made Kitchen Cabinets (custom sizes)"),
     "kitchen_countertop_info": clean_invisible_chars("Countertop (Laminate or specified equivalent)"),
