@@ -106,7 +106,7 @@ FIYATLAR = {
     "italian_sofa_total_price": 800.00,
     "inclass_chairs_unit_price": 150.00,
     "exterior_wood_cladding_m2_price": 150.00,
-    "brushed_grey_granite_countertops_price_m2_avg": 425.00,
+    "brushed_grey_granite_countertops_price_per_m2_avg": 425.00,
     "100mm_eps_isothermal_panel_unit_price": 27.00,
     "gypsum_board_white_per_unit_price": 8.65,
     "gypsum_board_green_per_unit_price": 11.95,
@@ -134,6 +134,9 @@ GYPSUM_BOARD_UNIT_AREA_M2 = 2.88
 GLASS_WOOL_M2_PER_PACKET = 10.0
 
 # --- PDF Metinleri için Çeviri Sözlüğü ---
+# Bu sözlük, PDF metinlerinin tek bir yerden yönetilmesini sağlar.
+# Anahtar: İngilizce metin
+# Değer: [İngilizce metin, Yunanca metin]
 TRANSLATIONS = {
     # Genel Metinler
     "PREFABRICATED HOUSE PROPOSAL": ["PREFABRICATED HOUSE PROPOSAL", "ΠΡΟΤΑΣΗ ΠΡΟΚΑΤΑΣΚΕΥΑΣΜΕΝΟΥ ΣΠΙΤΙΟΥ"],
