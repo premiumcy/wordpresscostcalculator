@@ -510,7 +510,7 @@ def create_customer_proposal_pdf_en_gr(house_price, solar_price, aether_package_
     final_page_elements.append(Paragraph(clean_invisible_chars(f"{TRANSLATIONS['Our prefabricated living spaces have a 3-year warranty.'][0]} / {TRANSLATIONS['Our prefabricated living spaces have a 3-year warranty.'][1]}."), styles['NormalBilingual']))
     
     final_page_elements.append(Spacer(1, 8*mm))
-    final_page_elements.append(Paragraph(clean_invisible_chars(f"<b>{TRANSLATIONS['Estimated Delivery'][0]} / {TRANSLATIONS['Estimated Delivery'][1]}:</b> Approx. {project_details['delivery_duration_business_days']} {TRANSLATIONS['business days'][0]} / Περίπου {project_details['delivery_duration_business_days']} {TRANSLATIONS['business days'][1]}", payment_heading_style))
+    final_page_elements.append(Paragraph(clean_invisible_chars(f"<b>{TRANSLATIONS['Estimated Delivery'][0]} / {TRANSLATIONS['Estimated Delivery'][1]}:</b> Approx. {project_details['delivery_duration_business_days']} {TRANSLATIONS['business days'][0]} / Περίπου {project_details['delivery_duration_business_days']} {TRANSLATIONS['business days'][1]}", payment_heading_style)))
     final_page_elements.append(Spacer(1, 8*mm))
 
 
