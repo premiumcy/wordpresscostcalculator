@@ -170,7 +170,6 @@ def _create_aether_appendix_elements_en_gr(styles, project_details):
         [clean_invisible_chars("<b>Component / Εξάρτημα</b>"), clean_invisible_chars("<b>Description / Περιγραφή</b>")],
     ]
     
-    # Aether paketinin tüm bileşenlerini dinamik olarak ekle
     aether_items = [
         "smart_home_systems_info", "white_goods_info", "sofa_info", "security_camera_info",
         "exterior_cladding_info", "bedroom_set_info", "terrace_laminated_wood_flooring_info",
@@ -291,7 +290,7 @@ def create_customer_proposal_pdf_en_gr(house_price, solar_price, aether_package_
         Σκελετός: Ατσάλινος σκελετός σπιτιού με όλες τις απαραίτητες διατομές (κολώνες, δοκάρια), συμπεριλαμβανομένων των εξαρτημάτων σύνδεσης (φλάντζες, βίδες, μπουλόνια), όλα σύμφωνα με τα στατικά σχέδια.<br/>
         Στα μοντέλα με τίτλο ιδιοκτησίας και οικοδομική άδεια θα χρησιμοποιηθεί βαρύ μέταλλο HEA120 Ή HEA160. Όλες οι μη γαλβανισμένες μεταλλικές επιφάνειες θα αμμοβολιστούν σύμφωνα με το σουηδικό πρότυπο Sa 2.5 και θα επικαλυφθούν με αστάρι φωσφορικού ψευδαργύρου πάχους 80μm.<br/>
         Αντισκωριακή προστασία θα εφαρμοστεί σε όλα τα προφίλ και μπορεί να βαφτεί στο επιθυμητό χρώμα.<br/>
-        Όλες οι εργασίες συγκόλλησης προφίλ μας διαθέτουν πιστοποιητικό EN3834 σύμφωνα με τα ευρωπαϊκά πρότυπα. Όλες οι διαδικασίες κατασκευασίας του κτιρίου υπόκεινται σε ευρωπαϊκά πρότυπα και επιθεώρηση άδειας κατασκευασίας EN 1090-1 Steel Construction.
+        Όλες οι εργασίες συγκόλλησης προφίλ μας διαθέτουν πιστοποιητικό EN3834 σύμφωνα με τα ευρωπαϊκά πρότυπα. Όλες οι διαδικασίες κατασκευασίας του κτιρίου υπόκεινται σε ευρωπαϊκά πρότυπα και επιθεώρηση άδειας κατασκευής EN 1090-1 Steel Construction.
         """
     building_structure_table_data = [
         [Paragraph(clean_invisible_chars(f"<b>{TRANSLATIONS['Construction Type'][0]} / {TRANSLATIONS['Construction Type'][1]}</b>"), styles['NormalBilingual']), Paragraph(project_details['structure_type'], styles['NormalBilingual'])],
@@ -305,7 +304,6 @@ def create_customer_proposal_pdf_en_gr(house_price, solar_price, aether_package_
     elements.append(building_materials_table)
     elements.append(Spacer(1, 5*mm))
 
-    # --- Teknik Özellikler - İç Mekan, Yalıtım ve Doğramalar ---
     interior_insulation_table_data = []
     
     floor_covering_text = project_details.get('floor_covering_type', 'N/A')
@@ -463,8 +461,6 @@ def create_customer_proposal_pdf_en_gr(house_price, solar_price, aether_package_
     elements.append(other_features_table)
     elements.append(Spacer(1, 5*mm))
 
-    # --- PRICE & PAYMENT SCHEDULE on a NEW PAGE ---
-    elements.append(PageBreak())
     final_page_elements = [Spacer(1, 12*mm)]
 
     final_page_elements.append(Paragraph("PRICE & PAYMENT SCHEDULE / ΤΙΜΗ & ΠΡΟΓΡΑΜΜΑ ΠΛΗΡΩΜΩΝ", styles['Heading']))
