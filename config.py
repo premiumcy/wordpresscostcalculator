@@ -199,7 +199,7 @@ MATERIAL_INFO_ITEMS = {
     "aether_package_exterior_wood_cladding_info": "Exterior Wood Cladding (Wallpaper) (Aether Package)",
     "aether_package_brushed_grey_granite_countertops_info": "Brushed Gray Kale Granite Kitchen/Bathroom Countertops (Aether Package)",
 }
-# --- Sabit Oranlar ve Alanlar ---{
+# --- Sabit Oranlar ve Alanlar ---
 FIRE_RATE = 0.05
 VAT_RATE = 0.19
 MONTHLY_ACCOUNTING_EXPENSES = 180.00
@@ -208,7 +208,7 @@ ANNUAL_INCOME_TAX_RATE = 0.235
 OSB_PANEL_AREA_M2 = 1.22 * 2.44
 GYPSUM_BOARD_UNIT_AREA_M2 = 2.88
 GLASS_WOOL_M2_PER_PACKET = 10.0
-}
+
 # --- PDF Metinleri için Çeviri Sözlüğü ---
 TRANSLATIONS = {
     # Genel Metinler
