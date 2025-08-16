@@ -37,7 +37,7 @@ COMPANY_INFO = {
     "swift_bic": clean_invisible_chars("BCYPCY2N")
 }
 
-# --- GÜNCELLENMİŞ FİYAT LİSTESİ ---
+# --- GÜNCELLEŞTİRİLMİŞ FİYAT LİSTESİ ---
 # Tüm fiyatlar KDV hariç maliyet fiyatlarıdır.
 FIYATLAR = {
     # Çelik Profil Fiyatları (6m parça başına)
@@ -71,8 +71,8 @@ FIYATLAR = {
     "wc_ceramic_m2_labor": 20.00,
     "electrical_per_m2": 25.00,
     "plumbing_per_m2": 25.00,
-    "osb_piece": 12.25, # GÜNCELLENDİ
-    "insulation_per_m2": 5.25, # GÜNCELLENDİ
+    "osb_piece": 12.25, # GÜNCELLEŞTİRİLDİ
+    "insulation_per_m2": 5.25, # GÜNCELLEŞTİRİLDİ
     
     # İşçilik Fiyatları
     "welding_labor_m2_standard": 160.00,
@@ -170,24 +170,24 @@ MATERIAL_INFO_ITEMS = {
     "plumbing_faucets_info": "Kitchen and Bathroom Faucets",
     "plumbing_shower_mixer_info": "Shower Head and Faucet",
     "plumbing_valves_info": "Main and Intermediate Shut-Off Valves",
-    "plumbing_pvc_pipes_info": "PVC Drain Pipes 50mm/100mm",
+    "plumbing_pvc_pipes_info": "PVC Drain Pipes (50mm / 100mm)",
     "plumbing_siphons_info": "Siphons and floor drains",
     "wc_toilet_bowl_info": "Toilet & Cistern",
     "wc_washbasin_info": "Hand Wash Sink & Faucet",
     "wc_towel_rail_info": "Towel Rail",
     "wc_mirror_info": "Mirror",
     "wc_accessories_info": "Bathroom Accessories",
-    "wc_shower_unit_info": "Shower Unit_Shower Head and Faucet",
+    "wc_shower_unit_info": "Shower Unit (Shower Head and Faucet)",
 
     "kitchen_mdf_info": "Glossy White MDF Material",
-    "kitchen_cabinets_info": "Custom-Made Kitchen Cabinets (custom sizes",
-    "kitchen_countertop_info": "Countertop (Laminate or specified equivalent",
+    "kitchen_cabinets_info": "Custom-Made Kitchen Cabinets (custom sizes)",
+    "kitchen_countertop_info": "Countertop (Laminate or specified equivalent)",
     "kitchen_sink_faucet_info": "Sink and Faucet",
-    "aether_package_smart_home_info": "Smart Home Systems (Aether Package",
-    "aether_package_white_goods_info": "White Goods (Aether Package",
-    "aether_package_sofa_info": "Sofa (Aether Package",
-    "aether_package_security_camera_info": "Security Camera (Aether Package",
-    "aether_package_exterior_cladding_info": "Exterior Cladding (Knauf Aquapanel) (Aether Package",
+    "aether_package_smart_home_info": "Smart Home Systems (Aether Package)",
+    "aether_package_white_goods_info": "White Goods (Aether Package)",
+    "aether_package_sofa_info": "Sofa (Aether Package)",
+    "aether_package_security_camera_info": "Security Camera (Aether Package)",
+    "aether_package_exterior_cladding_info": "Exterior Cladding (Knauf Aquapanel) (Aether Package)",
     "aether_package_bedroom_set_info": "Bedroom Set (Aether Package)",
     "aether_package_terrace_flooring_info": "Terrace Laminate Wood Flooring (Aether Package)",
     "aether_package_porcelain_tile_info": "Porcelain Tiles (Aether Pack)",
@@ -199,6 +199,7 @@ MATERIAL_INFO_ITEMS = {
     "aether_package_exterior_wood_cladding_info": "Exterior Wood Cladding (Wallpaper) (Aether Package)",
     "aether_package_brushed_grey_granite_countertops_info": "Brushed Gray Kale Granite Kitchen/Bathroom Countertops (Aether Package)",
 }
+
 # --- Sabit Oranlar ve Alanlar ---
 FIRE_RATE = 0.05
 VAT_RATE = 0.19
@@ -210,6 +211,9 @@ GYPSUM_BOARD_UNIT_AREA_M2 = 2.88
 GLASS_WOOL_M2_PER_PACKET = 10.0
 
 # --- PDF Metinleri için Çeviri Sözlüğü ---
+# Bu sözlük, PDF metinlerinin tek bir yerden yönetilmesini sağlar.
+# Anahtar: İngilizce metin
+# Değer: [İngilizce metin, Yunanca metin]
 TRANSLATIONS = {
     # Genel Metinler
     "PREFABRICATED HOUSE PROPOSAL": ["PREFABRICATED HOUSE PROPOSAL", "ΠΡΟΤΑΣΗ ΠΡΟΚΑΤΑΣΚΕΥΑΣΜΕΝΟΥ ΣΠΙΤΙΟΥ"],
