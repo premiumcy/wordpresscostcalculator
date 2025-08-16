@@ -16,8 +16,9 @@ from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
 from reportlab.lib.units import mm
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
-from .config import FIYATLAR, COMPANY_INFO, MATERIAL_INFO_ITEMS, TRANSLATIONS, VAT_RATE
-from .utils import clean_invisible_chars, format_currency, calculate_rounded_up_cost, get_company_logo_base64
+# Göreceli içe aktarma hatasını gidermek için noktalar (.) kaldırıldı.
+from config import FIYATLAR, COMPANY_INFO, MATERIAL_INFO_ITEMS, TRANSLATIONS, VAT_RATE
+from utils import clean_invisible_chars, format_currency, calculate_rounded_up_cost, get_company_logo_base64
 
 
 # --- Ortak PDF Yardımcı Fonksiyonları ---
@@ -454,7 +455,7 @@ def create_customer_proposal_pdf_en_gr(house_price, solar_price, aether_package_
 
 
     if extra_general_additions_list_en_gr:
-        other_features_table_data.append([Paragraph('<b>Extra General Additions / Έξτρα Γενικές Προσθήκες</b>', styles['NormalBilingual']), Paragraph("<br/>".join(extra_general_additions_list_en_gr), styles['NormalBilingual'])])
+        other_features_table_data.append([Paragraph(clean_invisible_chars(f"{TRANSLATIONS['Extra General Additions'][0]} / {TRANSLATIONS['Extra General Additions'][1]}</b>"), styles['NormalBilingual']), Paragraph("<br/>".join(extra_general_additions_list_en_gr), styles['NormalBilingual'])])
 
     other_features_table = Table(other_features_table_data, colWidths=[60*mm, 110*mm])
     other_features_table.setStyle(TableStyle([('VALIGN', (0,0), (-1,-1), 'TOP'), ('LEFTPADDING', (0,0), (-1,-1), 0), ('BOTTOMPADDING', (0,0), (-1,-1), 2)]))
@@ -463,30 +464,30 @@ def create_customer_proposal_pdf_en_gr(house_price, solar_price, aether_package_
 
     final_page_elements = [Spacer(1, 12*mm)]
 
-    final_page_elements.append(Paragraph("PRICE & PAYMENT SCHEDULE / ΤΙΜΗ & ΠΡΟΓΡΑΜΜΑ ΠΛΗΡΩΜΩΝ", styles['Heading']))
+    final_page_elements.append(Paragraph(clean_invisible_chars(f"{TRANSLATIONS['PRICE & PAYMENT SCHEDULE'][0]} / {TRANSLATIONS['PRICE & PAYMENT SCHEDULE'][1]}"), styles['Heading']))
 
     price_table_data = []
     price_table_data.append([
-        Paragraph("Main House Price / Τιμή Κυρίως Σπιτιού", colored_table_header_style),
+        Paragraph(clean_invisible_chars(f"{TRANSLATIONS['Main House Price'][0]} / {TRANSLATIONS['Main House Price'][1]}"), colored_table_header_style),
         Paragraph(format_currency(house_price), colored_table_header_style)
     ])
     if solar_price > 0:
         price_table_data.append([
-            Paragraph("Solar System Price / Τιμή Ηλιακού Συστήματος", colored_table_header_style),
+            Paragraph(clean_invisible_chars(f"{TRANSLATIONS['Solar System Price'][0]} / {TRANSLATIONS['Solar System Price'][1]}"), colored_table_header_style),
             Paragraph(format_currency(solar_price), colored_table_header_style)
         ])
     if aether_package_price > 0:
         price_table_data.append([
-            Paragraph("Aether Package Price / Τιμή Πακέτου Aether", colored_table_header_style),
+            Paragraph(clean_invisible_chars(f"{TRANSLATIONS['Aether Package Price'][0]} / {TRANSLATIONS['Aether Package Price'][1]}"), colored_table_header_style),
             Paragraph(format_currency(aether_package_price), colored_table_header_style)
         ])
     if extra_expenses_info['amount'] > 0:
         price_table_data.append([
-            Paragraph("Extra Expenses / Έξτρα Έξοδα", colored_table_header_style),
+            Paragraph(clean_invisible_chars(f"{TRANSLATIONS['Extra Expenses'][0]} / {TRANSLATIONS['Extra Expenses'][1]}"), colored_table_header_style),
             Paragraph(format_currency(extra_expenses_info['amount']), colored_table_header_style)
         ])
     price_table_data.append([
-        Paragraph("TOTAL PRICE / ΣΥΝΟΛΙΚΗ ΤΙΜΗ", colored_table_header_style),
+        Paragraph(clean_invisible_chars(f"{TRANSLATIONS['TOTAL PRICE'][0]} / {TRANSLATIONS['TOTAL PRICE'][1]}"), colored_table_header_style),
         Paragraph(format_currency(total_price), colored_table_header_style)
     ])
 
@@ -505,20 +506,20 @@ def create_customer_proposal_pdf_en_gr(house_price, solar_price, aether_package_
     final_page_elements.append(price_summary_table)
     final_page_elements.append(Spacer(1, 8*mm))
 
-    final_page_elements.append(Paragraph("All prices are VAT included / Όλες οι τιμές περιλαμβάνουν ΦΠΑ.", payment_heading_style))
-    final_page_elements.append(Paragraph("Our prefabricated living spaces have a 3-year warranty. Hot and cold balance is provided with polyurethane panels, fire class is A quality and energy consumption is A+++. / Οι προκατασκευασμένοι χώροι διαβίωσης μας έχουν 3ετή εγγύηση. Η ισορροπία ζεστού και κρύου επιτυγχάνεται με πάνελ πολυουρεθάνης, η κλάση πυρός είναι Α ποιότητας και η κατανάλωση ενέργειας είναι Α+++.", styles['NormalBilingual']))
+    final_page_elements.append(Paragraph(clean_invisible_chars(f"{TRANSLATIONS['All prices are VAT included'][0]} / {TRANSLATIONS['All prices are VAT included'][1]}."), payment_heading_style))
+    final_page_elements.append(Paragraph(clean_invisible_chars(f"{TRANSLATIONS['Our prefabricated living spaces have a 3-year warranty.'][0]} / {TRANSLATIONS['Our prefabricated living spaces have a 3-year warranty.'][1]}."), styles['NormalBilingual']))
     
     final_page_elements.append(Spacer(1, 8*mm))
-    final_page_elements.append(Paragraph(f"<b>Estimated Delivery / Εκτιμώμενη Παράδοση:</b> Approx. {project_details['delivery_duration_business_days']} business days / Περίπου {project_details['delivery_duration_business_days']} εργάσιμες ημέρες", payment_heading_style))
+    final_page_elements.append(Paragraph(clean_invisible_chars(f"<b>{TRANSLATIONS['Estimated Delivery'][0]} / {TRANSLATIONS['Estimated Delivery'][1]}:</b> Approx. {project_details['delivery_duration_business_days']} {TRANSLATIONS['business days'][0]} / Περίπου {project_details['delivery_duration_business_days']} {TRANSLATIONS['business days'][1]}", payment_heading_style))
     final_page_elements.append(Spacer(1, 8*mm))
 
 
-    final_page_elements.append(Paragraph("Main House Payment Plan / Πρόγραμμα Πληρωμών Κυρίως Σπιτιού", payment_heading_style))
+    final_page_elements.append(Paragraph(clean_invisible_chars(f"{TRANSLATIONS['Main House Payment Plan'][0]} / {TRANSLATIONS['Main House Payment Plan'][1]}"), payment_heading_style))
 
     if project_details.get('installment_option', 'full') == 'full':
         payment_data = [
-            [Paragraph("1. Full Payment / Πλήρης Εξόφληση (100%)", payment_heading_style), Paragraph(format_currency(house_price), payment_heading_style)],
-            [Paragraph("   - Due upon contract signing / Με την υπογραφή της σύμβασης.", styles['NormalBilingual']), ""],
+            [Paragraph(clean_invisible_chars(f"{TRANSLATIONS['Down Payment'][0]} / {TRANSLATIONS['Down Payment'][1]} (100%)"), payment_heading_style), Paragraph(format_currency(house_price), payment_heading_style)],
+            [Paragraph(clean_invisible_chars(f"   - {TRANSLATIONS['Due upon contract signing'][0]} / {TRANSLATIONS['Due upon contract signing'][1]}."), styles['NormalBilingual']), ""],
         ]
     else: # installments
         down_payment = house_price * 0.40
@@ -530,44 +531,43 @@ def create_customer_proposal_pdf_en_gr(house_price, solar_price, aether_package_
             installment_amount = remaining_balance
 
         payment_data = [
-            [Paragraph("1. Down Payment / Προκαταβολή (40%)", payment_heading_style), Paragraph(format_currency(down_payment), payment_heading_style)],
-            [Paragraph("   - Due upon contract signing / Με την υπογραφή της σύμβασης.", styles['NormalBilingual']), ""],
+            [Paragraph(clean_invisible_chars(f"<b>{TRANSLATIONS['Down Payment'][0]} / {TRANSLATIONS['Down Payment'][1]}</b> (40%)"), payment_heading_style), Paragraph(format_currency(down_payment), payment_heading_style)],
+            [Paragraph(clean_invisible_chars(f"   - {TRANSLATIONS['Due upon contract signing'][0]} / {TRANSLATIONS['Due upon contract signing'][1]}."), styles['NormalBilingual']), ""],
         ]
         if num_installments >= 1:
-            payment_data.append([Paragraph("2. 1st Installment / 1η Δόση", payment_heading_style), Paragraph(format_currency(installment_amount), payment_heading_style)])
-            payment_data.append([Paragraph("   - Due upon completion of structure / Με την ολοκλήρωση της κατασκευής.", styles['NormalBilingual']), ""])
+            payment_data.append([Paragraph(clean_invisible_chars(f"<b>{TRANSLATIONS['1st Installment'][0]} / {TRANSLATIONS['1st Installment'][1]}</b>"), payment_heading_style), Paragraph(format_currency(installment_amount), payment_heading_style)])
+            payment_data.append([Paragraph(clean_invisible_chars(f"   - {TRANSLATIONS['Due upon completion of structure'][0]} / {TRANSLATIONS['Due upon completion of structure'][1]}."), styles['NormalBilingual']), ""])
         if num_installments >= 2:
-            payment_data.append([Paragraph("3. 2nd Installment / 2η Δόση", payment_heading_style), Paragraph(format_currency(installment_amount), payment_heading_style)])
-            payment_data.append([Paragraph("   - Due upon completion of interior works / Με την ολοκλήρωση των εσωτερικών εργασιών.", styles['NormalBilingual']), ""])
+            payment_data.append([Paragraph(clean_invisible_chars(f"<b>{TRANSLATIONS['2nd Installment'][0]} / {TRANSLATIONS['2nd Installment'][1]}</b>"), payment_heading_style), Paragraph(format_currency(installment_amount), payment_heading_style)])
+            payment_data.append([Paragraph(clean_invisible_chars(f"   - {TRANSLATIONS['Due upon completion of interior works'][0]} / {TRANSLATIONS['Due upon completion of interior works'][1]}."), styles['NormalBilingual']), ""])
         if num_installments >= 3:
-            payment_data.append([Paragraph("4. Final Payment / Τελική Εξόφληση", payment_heading_style), Paragraph(format_currency(installment_amount), payment_heading_style)])
-            payment_data.append([Paragraph("   - Due upon final delivery / Με την τελική παράδοση.", styles['NormalBilingual']), ""])
+            payment_data.append([Paragraph(clean_invisible_chars(f"<b>{TRANSLATIONS['Final Payment'][0]} / {TRANSLATIONS['Final Payment'][1]}</b>"), payment_heading_style), Paragraph(format_currency(installment_amount), payment_heading_style)])
+            payment_data.append([Paragraph(clean_invisible_chars(f"   - {TRANSLATIONS['Due upon final delivery'][0]} / {TRANSLATIONS['Due upon final delivery'][1]}."), styles['NormalBilingual']), ""])
 
 
     if solar_price > 0:
-        payment_data.append([Paragraph("Solar System / Ηλιακό Σύστημα", payment_heading_style), Paragraph(format_currency(solar_price), payment_heading_style)])
-        payment_data.append([Paragraph("   - Due upon contract signing / Με την υπογραφή της σύμβασης.", styles['NormalBilingual']), ""])
+        payment_data.append([Paragraph(clean_invisible_chars(f"{TRANSLATIONS['Solar System Price'][0]} / {TRANSLATIONS['Solar System Price'][1]}"), payment_heading_style), Paragraph(format_currency(solar_price), payment_heading_style)])
+        payment_data.append([Paragraph(clean_invisible_chars(f"   - {TRANSLATIONS['Due upon contract signing'][0]} / {TRANSLATIONS['Due upon contract signing'][1]}."), styles['NormalBilingual']), ""])
     if aether_package_price > 0:
-        payment_data.append([Paragraph("Aether Package Price / Πακέτο Aether", payment_heading_style), Paragraph(format_currency(aether_package_price), payment_heading_style)])
-        payment_data.append([Paragraph("   - Due upon contract signing / Με την υπογραφή της σύμβασης.", styles['NormalBilingual']), ""])
+        payment_data.append([Paragraph(clean_invisible_chars(f"{TRANSLATIONS['Aether Package Price'][0]} / {TRANSLATIONS['Aether Package Price'][1]}"), payment_heading_style), Paragraph(format_currency(aether_package_price), payment_heading_style)])
+        payment_data.append([Paragraph(clean_invisible_chars(f"   - {TRANSLATIONS['Due upon contract signing'][0]} / {TRANSLATIONS['Due upon contract signing'][1]}."), styles['NormalBilingual']), ""])
     if extra_expenses_info['amount'] > 0:
-        payment_data.append([Paragraph("Extra Expenses / Έξτρα Έξοδα", payment_heading_style), Paragraph(format_currency(extra_expenses_info['amount']), payment_heading_style)])
-        payment_data.append([Paragraph("   - Due upon contract signing / Με την υπογραφή της σύμβασης.", styles['NormalBilingual']), ""])
+        payment_data.append([Paragraph(clean_invisible_chars(f"<b>{TRANSLATIONS['Extra Expenses'][0]} / {TRANSLATIONS['Extra Expenses'][1]}</b>"), payment_heading_style), Paragraph(format_currency(extra_expenses_info['amount']), payment_heading_style)])
+        payment_data.append([Paragraph(clean_invisible_chars(f"   - {TRANSLATIONS['Due upon contract signing'][0]} / {TRANSLATIONS['Due upon contract signing'][1]}."), styles['NormalBilingual']), ""])
 
     payment_table = Table(payment_data, colWidths=[120*mm, 50*mm])
     payment_table.setStyle(TableStyle([('ALIGN', (0,0), (-1,-1), 'LEFT'), ('VALIGN', (0,0), (-1,-1), 'TOP'), ('LEFTPADDING', (0,0), (-1,-1), 0), ('BOTTOMPADDING', (0,0), (-1,-1), 2)]))
     final_page_elements.append(payment_table)
     elements.append(KeepTogether(final_page_elements))
 
-    # Add appendices if selected
     if project_details['solar']:
-        solar_elements = _create_solar_appendix_elements_en_gr(project_details['solar_kw'], project_details['solar_price'], styles['Heading'], styles['NormalBilingual'], styles['PriceTotal'])
+        solar_elements = _create_solar_appendix_elements_en_gr(styles, project_details)
         elements.extend(solar_elements)
     if project_details['heating']:
         heating_elements = _create_heating_appendix_elements_en_gr(styles)
         elements.extend(heating_elements)
-    if project_details['aether_package_choice'] != 'None':
-        aether_elements = _create_aether_appendix_elements_en_gr(aether_package_price, styles)
+    if project_details.get('aether_package_choice', 'None') != 'None':
+        aether_elements = _create_aether_appendix_elements_en_gr(styles, project_details)
         elements.extend(aether_elements)
 
     doc.build(elements)
