@@ -22,9 +22,6 @@ from .utils import clean_invisible_chars, format_currency, calculate_rounded_up_
 
 # --- Ortak PDF Yardımcı Fonksiyonları ---
 def draw_pdf_header_and_footer_common(canvas_obj, doc, customer_info, company_info, logo_data_b64, language_code):
-    """
-    Tüm PDF sayfaları için ortak başlık ve altbilgiyi çizer.
-    """
     canvas_obj.saveState()
     main_font_bold = f"{doc.main_font}-Bold"
     main_font = doc.main_font
@@ -422,7 +419,7 @@ def create_customer_proposal_pdf_en_gr(house_price, solar_price, aether_package_
     if project_details['solar']:
         extra_general_additions_list_en_gr.append(clean_invisible_chars(f"Solar System: {get_yes_no_empty(project_details['solar'])} ({project_details['solar_kw']} kW)") if project_details['solar'] else '')
     if project_details['wheeled_trailer']:
-        extra_general_additions_list_en_gr.append(clean_invisible_chars(f"Wheeled Trailer: {get_yes_no_empty(project_details['wheeled_trailer'])} ({format_currency(project_details['wheeled_trailer_price'])})" if project_details['wheeled_trailer'] else '')
+        extra_general_additions_list_en_gr.append(clean_invisible_chars(f"Wheeled Trailer: {get_yes_no_empty(project_details['wheeled_trailer'])} ({format_currency(project_details['wheeled_trailer_price'])})" if project_details['wheeled_trailer'] else ''))
     
     if project_details['smart_home_systems_option']:
         extra_general_additions_list_en_gr.append(clean_invisible_chars(f"Smart Home Systems: {get_yes_no_empty(project_details['smart_home_systems_option'])}"))
