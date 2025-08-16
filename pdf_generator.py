@@ -16,8 +16,10 @@ from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
 from reportlab.lib.units import mm
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
-from .config import FIYATLAR, COMPANY_INFO, MATERIAL_INFO_ITEMS, TRANSLATIONS, VAT_RATE
-from .utils import clean_invisible_chars, format_currency, calculate_rounded_up_cost, get_company_logo_base64
+
+# Göreceli içe aktarma hatasını gidermek için noktalar (.) kaldırıldı.
+from config import FIYATLAR, COMPANY_INFO, MATERIAL_INFO_ITEMS, TRANSLATIONS, VAT_RATE
+from utils import clean_invisible_chars, format_currency, calculate_rounded_up_cost, get_company_logo_base64
 
 
 # --- Ortak PDF Yardımcı Fonksiyonları ---
@@ -276,7 +278,7 @@ def create_customer_proposal_pdf_en_gr(house_price, solar_price, aether_package_
         Skeleton: Box profile with dimensions of {profiles_en_str} will be used. Antirust will be applied to all box profiles and can be painted with the desired color. All our profile welding works have EN3834 certification in accordance with European standards. The construction operations of the entire building are subject to European standards and EN 1090-1 Light Steel Construction license inspection.
         <br/><br/>
         <b>Λεπτομέρειες δομής κτιρίου:</b><br/>
-        Σκελετός: Θα χρησιμοποιηθεί προφίλ κουτιού διαστάσεων {profiles_en_str}. Αντισκωριακή προστασία θα εφαρμοστεί σε όλα τα προφίλ κουτιού και μπορεί να βαφτεί με το επιθυμητό χρώμα. Όλες οι εργασίες συγκόλλησης προφίλ μας διαθέτουν πιστοποίηση EN3834 σύμφωνα με τα ευρωπαϊκά πρότυπα. Οι κατασκευαστικές εργασίες ολόκληρου του κτιρίου υπόκεινται σε ευρωπαϊκά πρότυπα και επιθεώρηση άδειας κατασκευής EN 1090-1 Light Steel Construction.
+        Σκελετός: Θα χρησιμοποιηθεί προφίλ κουτιού διαστάσεων {profiles_en_str}. Αντισκωριακή προστασία θα εφαρμοστεί σε όλα τα προφίλ κουτιού και μπορεί να βαφτεί με το επιθυμητό χρώμα. Όλες οι εργασίες συγκόλλησης προφίλ μας διαθέτουν πιστοποίηση EN3834 σύμφωνα με τα ευρωπαϊκά πρότυπα. Οι κατασκευαστικές εργασίες ολόκληρου του κτιρίου υπόκεινται σε ευρωπαϊκά πρότυπα και επιθεώρηση άδειας κατασκευασίας EN 1090-1 Light Steel Construction.
         """
     else: # Heavy Steel
         building_structure_details_en_gr = f"""
@@ -290,7 +292,7 @@ def create_customer_proposal_pdf_en_gr(house_price, solar_price, aether_package_
         Σκελετός: Ατσάλινος σκελετός σπιτιού με όλες τις απαραίτητες διατομές (κολώνες, δοκάρια), συμπεριλαμβανομένων των εξαρτημάτων σύνδεσης (φλάντζες, βίδες, μπουλόνια), όλα σύμφωνα με τα στατικά σχέδια.<br/>
         Στα μοντέλα με τίτλο ιδιοκτησίας και οικοδομική άδεια θα χρησιμοποιηθεί βαρύ μέταλλο HEA120 Ή HEA160. Όλες οι μη γαλβανισμένες μεταλλικές επιφάνειες θα αμμοβολιστούν σύμφωνα με το σουηδικό πρότυπο Sa 2.5 και θα επικαλυφθούν με αστάρι φωσφορικού ψευδαργύρου πάχους 80μm.<br/>
         Αντισκωριακή προστασία θα εφαρμοστεί σε όλα τα προφίλ και μπορεί να βαφτεί στο επιθυμητό χρώμα.<br/>
-        Όλες οι εργασίες συγκόλλησης προφίλ μας διαθέτουν πιστοποιητικό EN3834 σύμφωνα με τα ευρωπαϊκά πρότυπα. Όλες οι διαδικασίες κατασκευασίας του κτιρίου υπόκεινται σε ευρωπαϊκά πρότυπα και επιθεώρηση άδειας κατασκευής EN 1090-1 Steel Construction.
+        Όλες οι εργασίες συγκόλλησης προφίλ μας διαθέτουν πιστοποιητικό EN3834 σύμφωνα με τα ευρωπαϊκά πρότυπα. Όλες οι διαδικασίες κατασκευασίας του κτιρίου υπόκεινται σε ευρωπαϊκά πρότυπα ve επιθεώρηση άδειας κατασκευασίας EN 1090-1 Steel Construction.
         """
     building_structure_table_data = [
         [Paragraph(clean_invisible_chars(f"<b>{TRANSLATIONS['Construction Type'][0]} / {TRANSLATIONS['Construction Type'][1]}</b>"), styles['NormalBilingual']), Paragraph(project_details['structure_type'], styles['NormalBilingual'])],
