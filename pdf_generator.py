@@ -16,10 +16,8 @@ from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
 from reportlab.lib.units import mm
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
-
-# Göreceli içe aktarma hatasını gidermek için noktalar (.) kaldırıldı.
-from config import FIYATLAR, COMPANY_INFO, MATERIAL_INFO_ITEMS, TRANSLATIONS, VAT_RATE
-from utils import clean_invisible_chars, format_currency, calculate_rounded_up_cost, get_company_logo_base64
+from .config import FIYATLAR, COMPANY_INFO, MATERIAL_INFO_ITEMS, TRANSLATIONS, VAT_RATE
+from .utils import clean_invisible_chars, format_currency, calculate_rounded_up_cost, get_company_logo_base64
 
 
 # --- Ortak PDF Yardımcı Fonksiyonları ---
@@ -292,7 +290,7 @@ def create_customer_proposal_pdf_en_gr(house_price, solar_price, aether_package_
         Σκελετός: Ατσάλινος σκελετός σπιτιού με όλες τις απαραίτητες διατομές (κολώνες, δοκάρια), συμπεριλαμβανομένων των εξαρτημάτων σύνδεσης (φλάντζες, βίδες, μπουλόνια), όλα σύμφωνα με τα στατικά σχέδια.<br/>
         Στα μοντέλα με τίτλο ιδιοκτησίας και οικοδομική άδεια θα χρησιμοποιηθεί βαρύ μέταλλο HEA120 Ή HEA160. Όλες οι μη γαλβανισμένες μεταλλικές επιφάνειες θα αμμοβολιστούν σύμφωνα με το σουηδικό πρότυπο Sa 2.5 και θα επικαλυφθούν με αστάρι φωσφορικού ψευδαργύρου πάχους 80μm.<br/>
         Αντισκωριακή προστασία θα εφαρμοστεί σε όλα τα προφίλ και μπορεί να βαφτεί στο επιθυμητό χρώμα.<br/>
-        Όλες οι εργασίες συγκόλλησης προφίλ μας διαθέτουν πιστοποιητικό EN3834 σύμφωνα με τα ευρωπαϊκά πρότυπα. Όλες οι διαδικασίες κατασκευασίας του κτιρίου υπόκεινται σε ευρωπαϊκά πρότυπα ve επιθεώρηση άδειας κατασκευασίας EN 1090-1 Steel Construction.
+        Όλες οι εργασίες συγκόλλησης προφίλ μας διαθέτουν πιστοποιητικό EN3834 σύμφωνα με τα ευρωπαϊκά πρότυπα. Όλες οι διαδικασίες κατασκευασίας του κτιρίου υπόκεινται σε ευρωπαϊκά πρότυπα και επιθεώρηση άδειας κατασκευασίας EN 1090-1 Steel Construction.
         """
     building_structure_table_data = [
         [Paragraph(clean_invisible_chars(f"<b>{TRANSLATIONS['Construction Type'][0]} / {TRANSLATIONS['Construction Type'][1]}</b>"), styles['NormalBilingual']), Paragraph(project_details['structure_type'], styles['NormalBilingual'])],
@@ -550,7 +548,7 @@ def create_customer_proposal_pdf_en_gr(house_price, solar_price, aether_package_
         payment_data.append([Paragraph("Solar System / Ηλιακό Σύστημα", payment_heading_style), Paragraph(format_currency(solar_price), payment_heading_style)])
         payment_data.append([Paragraph("   - Due upon contract signing / Με την υπογραφή της σύμβασης.", styles['NormalBilingual']), ""])
     if aether_package_price > 0:
-        payment_data.append([Paragraph("Aether Package / Πακέτο Aether", payment_heading_style), Paragraph(format_currency(aether_package_price), payment_heading_style)])
+        payment_data.append([Paragraph("Aether Package Price / Πακέτο Aether", payment_heading_style), Paragraph(format_currency(aether_package_price), payment_heading_style)])
         payment_data.append([Paragraph("   - Due upon contract signing / Με την υπογραφή της σύμβασης.", styles['NormalBilingual']), ""])
     if extra_expenses_info['amount'] > 0:
         payment_data.append([Paragraph("Extra Expenses / Έξτρα Έξοδα", payment_heading_style), Paragraph(format_currency(extra_expenses_info['amount']), payment_heading_style)])
