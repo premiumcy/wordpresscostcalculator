@@ -561,6 +561,135 @@ def create_customer_proposal_pdf_en_gr(house_price, solar_price, aether_package_
     if project_details['aether_package_choice'] != 'None':
         aether_elements = _create_aether_appendix_elements_en_gr(styles, project_details)
         elements.extend(aether_elements)
+def create_internal_cost_report_pdf(cost_breakdown_df, financial_summary_df, profile_analysis_df, project_details, customer_info, logo_data_b64):
+    """
+    Türkçe dahili maliyet raporu PDF'i oluşturur.
+    """
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(
+        buffer,
+        pagesize=A4,
+        rightMargin=15*mm,
+        leftMargin=15*mm,
+        topMargin=40*mm, # Increased top margin for header
+        bottomMargin=25*mm
+    )
+
+    doc.customer_name = customer_info['name']
+    doc.company_name = COMPANY_INFO['name']
+    doc.main_font = "FreeSans" # Varsayılan font
+    doc.logo_data_b64 = logo_data_b64
+
+    def _internal_page_callback(canvas_obj, doc):
+        draw_pdf_header_and_footer_common(canvas_obj, doc, customer_info, COMPANY_INFO, doc.logo_data_b64, 'tr')
+
+    doc.onFirstPage = _internal_page_callback
+    doc.onLaterPages = _internal_page_callback
+
+    styles = getSampleStyleSheet()
+    styles.add(ParagraphStyle(
+        name='Header', parent=styles['Normal'], fontSize=18, alignment=TA_CENTER,
+        spaceAfter=20, fontName=f"{doc.main_font}-Bold", textColor=colors.HexColor("#3182ce")
+    ))
+    styles.add(ParagraphStyle(
+        name='SectionHeading', parent=styles['Heading2'], fontSize=12, spaceBefore=12,
+        spaceAfter=6, fontName=f"{doc.main_font}-Bold", textColor=colors.HexColor("#3182ce"), alignment=TA_LEFT
+    ))
+    styles.add(ParagraphStyle(
+        name='NormalTR', parent=styles['Normal'], fontSize=9, leading=12, spaceAfter=4, fontName=doc.main_font
+    ))
+    styles.add(ParagraphStyle(
+        name='SubsectionHeading', parent=styles['Heading3'], fontSize=10, spaceBefore=8, spaceAfter=4,
+        fontName=f"{doc.main_font}-Bold", textColor=colors.HexColor("#4a5568"), alignment=TA_LEFT
+    ))
+
+    header_style = styles['Header']
+    section_heading_style = styles['SectionHeading']
+    normal_tr_style = styles['NormalTR']
+    subsection_heading_style = styles['SubsectionHeading']
+
+    table_header_style = ParagraphStyle(
+        name='TableHeader', parent=styles['Normal'], fontSize=8, fontName=f"{doc.main_font}-Bold",
+        textColor=colors.white, alignment=TA_CENTER
+    )
+    table_cell_style = ParagraphStyle(
+        name='TableCell', parent=styles['Normal'], fontSize=8, fontName=doc.main_font, alignment=TA_LEFT
+    )
+    center_table_cell_style = ParagraphStyle(
+        name='CenterTableCell', parent=styles['Normal'], fontSize=8, fontName=doc.main_font, alignment=TA_CENTER
+    )
+    right_table_cell_style = ParagraphStyle(
+        name='RightTableCell', parent=styles['Normal'], fontSize=8, fontName=doc.main_font, alignment=TA_RIGHT
+    )
+    elements = []
+
+    # --- Başlık ---
+    elements.append(Paragraph(clean_invisible_chars("İÇ MALİYET RAPORU / INTERNAL COST REPORT"), header_style))
+    elements.append(Spacer(1, 5*mm))
+    elements.append(Paragraph(clean_invisible_chars(f"<b>Müşteri:</b> {customer_info['name']} | <b>Tarih:</b> {datetime.now().strftime('%d/%m/%Y')}"), normal_tr_style))
+    elements.append(Spacer(1, 10*mm))
+
+    # --- Proje Bilgileri ---
+    elements.append(Paragraph("PROJE BİLGİLERİ", section_heading_style))
+    elements.append(Paragraph(clean_invisible_chars(f"<b>Boyutlar:</b> {project_details['width']}m x {project_details['length']}m x {project_details['height']}m | <b>Toplam Alan:</b> {project_details['area']:.2f} m² | <b>Yapı Tipi:</b> {project_details['structure_type']}"), normal_tr_style))
+
+    if project_details.get('is_two_story', False):
+        elements.append(Paragraph(clean_invisible_chars(f"<b>İki Katlı Bina:</b> Var | 2. Kat Yüksekliği: {project_details.get('height_2nd_floor', 0)}m | 2. Kat Oda Konfigürasyonu: {project_details.get('room_config_2nd_floor', 'N/A')}"), normal_tr_style))
+
+    elements.append(Spacer(1, 8*mm))
+
+    # --- Maliyet Dağılımı ---
+    if not cost_breakdown_df.empty:
+        cost_data = [[Paragraph(c, table_header_style) for c in cost_breakdown_df.columns]]
+        for _, row in cost_breakdown_df.iterrows():
+            cost_data.append([
+                Paragraph(str(row['Item']), table_cell_style),
+                Paragraph(str(row['Quantity']), center_table_cell_style),
+                Paragraph(format_currency(row['Unit Price (€)']), right_table_cell_style),
+                Paragraph(format_currency(row['Total (€)']), right_table_cell_style)
+            ])
+        cost_table = Table(cost_data, colWidths=[65*mm, 30*mm, 35*mm, 40*mm])
+        cost_table.setStyle(TableStyle([('BACKGROUND', (0,0), (-1,0), colors.HexColor("#3182ce")),('GRID', (0,0), (-1,-1), 0.5, colors.grey),('ROWBACKGROUNDS', (0,1), (-1,-1), [colors.HexColor("#f7fafc"), colors.white])]))
+        elements.append(Paragraph("MALİYET DAĞILIMI", section_heading_style))
+        elements.append(cost_table)
+
+    # --- Steel Profile Analysis (if any) on a NEW PAGE ---
+    if not profile_analysis_df.empty and project_details['structure_type'] == 'Light Steel':
+        elements.append(PageBreak())
+        elements.append(Paragraph("ÇELİK PROFİL ANALİZİ", section_heading_style))
+        profile_data = [[Paragraph(c, table_header_style) for c in ['Profile Type', 'Count', 'Unit Price (€)', 'Total (€)']]]
+        for _, row in profile_analysis_df.iterrows():
+            profile_data.append([
+                Paragraph(str(row['Item']), table_cell_style),
+                Paragraph(str(row['Quantity']), center_table_cell_style),
+                Paragraph(format_currency(row['Unit Price (€)']), right_table_cell_style),
+                Paragraph(format_currency(row['Total (€)']), right_table_cell_style)
+            ])
+        profile_table = Table(profile_data, colWidths=[55*mm, 25*mm, 45*mm, 45*mm])
+        profile_table.setStyle(TableStyle([('BACKGROUND', (0,0), (-1,0), colors.HexColor("#3182ce")),('GRID', (0,0), (-1,-1), 0.5, colors.grey),('ROWBACKGROUNDS', (0,1), (-1,-1), [colors.HexColor("#f7fafc"), colors.white])]))
+        elements.append(profile_table)
+
+    # --- Financials on a NEW PAGE ---
+    elements.append(PageBreak())
+    elements.append(Paragraph("FİNANSAL ÖZET", section_heading_style))
+    financial_data = []
+    for item, amount in financial_summary_df.items():
+        item_cell = Paragraph(str(item), table_cell_style)
+        amount_cell = Paragraph(str(format_currency(amount)), right_table_cell_style)
+        financial_data.append([item_cell, amount_cell])
+
+    financial_table = Table(financial_data, colWidths=[100*mm, 70*mm])
+    financial_table.setStyle(TableStyle([
+        ('GRID', (0,0), (-1,-1), 0.5, colors.grey),
+        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+        ('LEFTPADDING', (0,0), (-1,-1), 6),
+        ('RIGHTPADDING', (0,0), (-1,-1), 6),
+        ('BACKGROUND', (0,0), (-1,0), colors.HexColor("#3182ce")),
+        ('TEXTCOLOR', (0,0), (-1,0), colors.white),
+        ('LINEBELOW', (0,0), (-1,0), 1, colors.grey),
+        ('ROWBACKGROUNDS', (0,1), (-1,-1), [colors.HexColor("#f7fafc"), colors.white])
+    ]))
+    elements.append(financial_table)
 
     doc.build(elements)
     buffer.seek(0)
