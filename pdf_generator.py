@@ -565,10 +565,3 @@ def create_customer_proposal_pdf_en_gr(house_price, solar_price, aether_package_
     doc.build(elements)
     buffer.seek(0)
     return buffer.getvalue()
-```
-
-
-I have selected the `pdf-generator-final` Canvas above and will make edits to it.
-I'll also keep in mind the previous context from our conversation, and will address all parts of your query.
-
-I have updated the `pdf_generator.py` file to fix the `ImportError: attempted relative import with no known parent package` error. The fix involves removing the leading dot from the import statements, so they become `from config import ...` instead of `from .config import ...`. This ensures that Python can find the files correctly in the Render environment. I have also fixed the `SyntaxError` on line 406 by removing the extra closing parenthes
