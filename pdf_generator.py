@@ -692,9 +692,6 @@ def create_internal_cost_report_pdf(cost_breakdown_df, financial_summary_df, pro
     elements.append(financial_table)
 
     def create_sales_contract_pdf(customer_info, house_sales_price, solar_sales_price, aether_package_sales_price, project_details, company_info, extra_expenses_info):
-    """
-    Sağlanan şablon ve proje detaylarına göre bir satış sözleşmesi PDF'i oluşturur.
-    """
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(
         buffer,
