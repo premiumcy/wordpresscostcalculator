@@ -691,6 +691,342 @@ def create_internal_cost_report_pdf(cost_breakdown_df, financial_summary_df, pro
     ]))
     elements.append(financial_table)
 
+    def create_sales_contract_pdf(customer_info, house_sales_price, solar_sales_price, aether_package_sales_price, project_details, company_info, extra_expenses_info):
+    """
+    Sağlanan şablon ve proje detaylarına göre bir satış sözleşmesi PDF'i oluşturur.
+    """
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(
+        buffer,
+        pagesize=A4,
+        rightMargin=15*mm,
+        leftMargin=15*mm,
+        topMargin=25*mm,
+        bottomMargin=25*mm
+    )
+    doc.customer_name = customer_info['name']
+    doc.company_name = COMPANY_INFO['name']
+    doc.main_font = "FreeSans"
+
+    def _contract_page_callback(canvas_obj, doc):
+        draw_pdf_header_and_footer_common(canvas_obj, doc, customer_info, COMPANY_INFO, doc.logo_data_b64, 'en_gr')
+
+    doc.onFirstPage = _contract_page_callback
+    doc.onLaterPages = _contract_page_callback
+    doc.logo_data_b64 = get_company_logo_base64(COMPANY_INFO['logo_url'])
+
+    styles = getSampleStyleSheet()
+    contract_heading_style = ParagraphStyle(
+        name='ContractHeading', parent=styles['Heading2'], fontSize=13, spaceAfter=8,
+        spaceBefore=12, fontName=f"{doc.main_font}-Bold", textColor=colors.HexColor("#3182ce"), alignment=TA_CENTER
+    )
+    contract_subheading_style = ParagraphStyle(
+        name='ContractSubheading', parent=styles['Heading3'], fontSize=10, spaceAfter=5,
+        spaceBefore=8, fontName=f"{doc.main_font}-Bold", textColor=colors.HexColor("#4a5568")
+    )
+    contract_normal_style = ParagraphStyle(
+        name='ContractNormal', parent=styles['Normal'], fontSize=8, leading=10,
+        spaceAfter=4, fontName=doc.main_font, alignment=TA_LEFT
+    )
+    contract_list_style = ParagraphStyle(
+        name='ContractList', parent=styles['Normal'], fontSize=8, leading=10,
+        spaceAfter=2, leftIndent=8*mm, fontName=doc.main_font
+    )
+    contract_signature_style = ParagraphStyle(
+        name='ContractSignature', parent=styles['Normal'], fontSize=8, leading=10,
+        alignment=TA_CENTER
+    )
+
+    elements = []
+
+    # Title
+    elements.append(Paragraph("SALES CONTRACT", contract_heading_style))
+    elements.append(Spacer(1, 6*mm))
+
+    # Parties involved (updated with dynamic ID and Company No)
+    today_date = datetime.now().strftime('%d')
+    today_month = datetime.now().strftime('%B')
+    today_year = datetime.now().year
+    elements.append(Paragraph(f"This Agreement ('Agreement') is entered into as of this {today_date} day of {today_month}, {today_year} by and between,", contract_normal_style))
+    elements.append(Paragraph(f"<b>{customer_info['name'].upper()}</b> (I.D. No: <b>{customer_info.get('id_no', 'N/A')}</b>) hereinafter referred to as the \"Buyer,\" and", contract_normal_style))
+    elements.append(Paragraph(f"<b>{company_info['name'].upper()}</b>, Company No. <b>{company_info['company_no']}</b>, with a registered address at {company_info['address']}, hereinafter referred to as the \"Seller.\"", contract_normal_style))
+    elements.append(Spacer(1, 6*mm))
+
+    # Subject of the Agreement
+    elements.append(Paragraph("Subject of the Agreement:", contract_subheading_style))
+    elements.append(Paragraph(f"A. The Seller agrees to complete and deliver to the Buyer the LIGHT STEEL STRUCTURE CONSTRUCTION (Tiny House) being constructed under its coordination at the address specified by the Buyer, in accordance with the specifications detailed in Appendix A.", contract_normal_style))
+    elements.append(Paragraph("B. The details of the construction related to the Portable House project will be considered as appendixes to this agreement, which constitute integral parts of the present agreement.", contract_normal_style))
+    elements.append(Spacer(1, 6*mm))
+
+    # Definitions
+    elements.append(Paragraph("1. Definitions:", contract_subheading_style))
+    elements.append(Paragraph("1.1. \"Completion\" refers to the point at which the Light Steel Structure House is fully constructed, inspected, and ready for delivery.", contract_normal_style))
+    elements.append(Paragraph("1.2. \"Delivery Date\" refers to the date on which the property is handed over to the Buyer, at which point the Buyer assumes full ownership and risk.", contract_normal_style))
+    elements.append(Paragraph("1.3. \"Force Majeure Event\" means any event beyond the reasonable control of the Seller that prevents the timely delivery of the house, including but not limited to acts of God, war, terrorism, strikes, lockouts, natural disasters, or any other event recognized under law.", contract_normal_style))
+    elements.append(Paragraph("1.4. \"House\" means the structure, as described in Appendix A.", contract_normal_style))
+    elements.append(Spacer(1, 6*mm))
+
+    # Sales Price and Payment Terms
+    total_sales_price_for_contract = house_sales_price + solar_sales_price + aether_package_sales_price + extra_expenses_info['amount']
+    total_sales_price_formatted = format_currency(total_sales_price_for_contract)
+
+    down_payment = house_sales_price * 0.40
+    remaining_balance = house_sales_price - down_payment
+    installment_amount = remaining_balance / 3
+
+    elements.append(Paragraph("2. Sales Price and Payment Terms:", contract_subheading_style))
+    elements.append(Paragraph(f"2.1. The sales price of the Portable Container House (herein after \"the house\") is <b>{format_currency(house_sales_price)}</b>, plus 19% VAT, according to the specifications, as described to APPENDIX \"A\", which constitutes an integral part of the present agreement.", contract_list_style))
+    elements.append(Paragraph(f"2.2. The total sales price (including solar, Aether package and extra expenses if applicable) is <b>{total_sales_price_formatted}</b> (VAT Included).", contract_list_style))
+    elements.append(Paragraph("2.3. The Buyer will pay the following amounts according to the schedule:", contract_list_style))
+
+    # Payment plan based on installment_option
+    if project_details.get('installment_option', 'full') == 'full':
+        elements.append(Paragraph(f"- Full Payment: {format_currency(house_sales_price)} upon contract signing.", contract_list_style, bulletText=''))
+    else: # installments
+        down_payment = house_sales_price * 0.40
+        remaining_balance = house_sales_price - down_payment
+        num_installments = int(project_details['installment_option'].split('_')[0])
+        if num_installments > 0:
+            installment_amount = remaining_balance / num_installments
+        else:
+            installment_amount = remaining_balance
+
+        elements.append(Paragraph(f"- Main House (Total: {format_currency(house_sales_price)})", contract_list_style, bulletText=''))
+        elements.append(Paragraph(f"  - 40% Down Payment: {format_currency(down_payment)} upon contract signing.", contract_list_style, bulletText='-'))
+        for i in range(num_installments):
+            if i == 0:
+                elements.append(Paragraph(f"  - 1st Installment: {format_currency(installment_amount)} upon completion of structure.", contract_list_style, bulletText='-'))
+            elif i == 1:
+                elements.append(Paragraph(f"  - 2nd Installment: {format_currency(installment_amount)} upon completion of interior works.", contract_list_style, bulletText='-'))
+            elif i == 2:
+                elements.append(Paragraph(f"  - Final Payment: {format_currency(installment_amount)} upon final delivery.", contract_list_style, bulletText='-'))
+
+
+    if solar_sales_price > 0:
+        elements.append(Paragraph(f"- Solar System: {format_currency(solar_sales_price)} due upon contract signing.", contract_list_style, bulletText=''))
+    if aether_package_sales_price > 0:
+        elements.append(Paragraph(f"- Aether Package: {format_currency(aether_package_sales_price)} due upon contract signing.", contract_list_style, bulletText=''))
+    if extra_expenses_info['amount'] > 0:
+        extra_desc_en = extra_expenses_info['description'] or "Unspecified Extra Expenses"
+        elements.append(Paragraph(f"- Extra Expenses ({extra_desc_en}): {format_currency(extra_expenses_info['amount'])} due upon contract signing.", contract_list_style, bulletText=''))
+
+
+    elements.append(Paragraph("2.4. Any delay in payment shall result in legal interest charges at 2% per month.", contract_list_style))
+    elements.append(Paragraph("2.5. If the Buyer fails to pay any installment for more than 20 days upon written notice, the seller reserves the right to terminate the contract and keep the deposit, as a compensation for damages caused.", contract_list_style))
+    elements.append(Paragraph("2.6. The payment terms and dates envisaged under the headings of the sales price, payment terms, and delivery above constitute the essence of this sales agreement and form its basis.", contract_list_style))
+    elements.append(Spacer(1, 6*mm))
+
+    # Bank Details
+    elements.append(Paragraph("2.7. Bank Details:", contract_subheading_style))
+    bank_details_data = [
+        [Paragraph("Bank Name:", contract_normal_style), Paragraph(COMPANY_INFO['bank_name'], contract_normal_style)],
+        [Paragraph("Bank Address:", contract_normal_style), Paragraph(COMPANY_INFO['bank_address'], contract_normal_style)],
+        [Paragraph("Account Name:", contract_normal_style), Paragraph(COMPANY_INFO['account_name'], contract_normal_style)],
+        [Paragraph("IBAN:", contract_normal_style), Paragraph(COMPANY_INFO['iban'], contract_normal_style)],
+        [Paragraph("Account Number:", contract_normal_style), Paragraph(COMPANY_INFO['account_number'], contract_normal_style)],
+        [Paragraph("Currency:", contract_normal_style), Paragraph(COMPANY_INFO['currency_type'], contract_normal_style)],
+        [Paragraph("SWIFT/BIC:", contract_normal_style), Paragraph(COMPANY_INFO['swift_bic'], contract_normal_style)],
+    ]
+    bank_details_table = Table(bank_details_data, colWidths=[40*mm, 130*mm])
+    bank_details_table.setStyle(TableStyle([('VALIGN', (0,0), (-1,-1), 'TOP'), ('LEFTPADDING', (0,0), (-1,-1), 0), ('BOTTOMPADDING', (0,0), (-1,-1), 2)]))
+    elements.append(bank_details_table)
+    elements.append(Spacer(1, 6*mm))
+
+    # Inspection of the Property and Defects
+    elements.append(Paragraph("3. Inspection of the Property and Defects:", contract_subheading_style))
+    elements.append(Paragraph("3.1. The Buyer shall have the right to inspect the property during the construction process. The Buyer may request an inspection at any point with 7 days' notice.", contract_normal_style))
+    elements.append(Paragraph("3.2. Any defects or concerns raised during inspections shall be addressed by the Seller at no additional cost to the Buyer. The buyer shall keep a written record of inspections which the byuer signs after each inspection, confirming the status of affairs.", contract_normal_style))
+    elements.append(Paragraph("3.3. Final inspection of the completed house will occur within 10 days of the delivery date, after which the Buyer shall provide written a list of defects.", contract_normal_style))
+    elements.append(Paragraph("3.4. If there are any possible defects, the seller will restore them within ........ days/months and notify the buyer. In such a case, the delivery of the house will be determined accordingly.", contract_normal_style))
+    elements.append(Paragraph("3.5. The seller will repair and/or replace any possible defects, within ........ days/months.", contract_normal_style))
+    elements.append(Spacer(1, 6*mm))
+
+    # Completion of the House
+    elements.append(Paragraph("4. Completion of the House:", contract_subheading_style))
+    elements.append(Paragraph("4.1. The Seller will issue an invoice and deliver the property to the Buyer after the full payment of the sales price and all amounts specified in Article 2, upon completion of the construction of the light steel structure house. Document procurement related to this matter is outside the specified time for delivery.", contract_normal_style))
+    elements.append(Paragraph("4.2. In order to complete processes such as partitioning, transfer, etc., the Buyer agrees to assist the Seller and, for this purpose, to apply to official, semi-official, and other authorities jointly or individually with the Seller and/or other shareholder or shareholders, to sign necessary signatures, fill out forms, and/or, if necessary, appoint the Seller as a representative.", contract_normal_style))
+    elements.append(Paragraph("4.3. The Buyer will be responsible for the Tax (VAT) of the house from the delivery of the light steel structure house.", contract_normal_style))
+    elements.append(Paragraph("4.4. Despite the Seller's completion of the necessary legal procedures, the Seller will not be responsible for delays and extra transit expenses related to customs procedures and exit of the materials of this house.", contract_normal_style))
+
+    elements.append(Paragraph(f"4.5. The House will be delivered within approximately {project_details['delivery_duration_business_days']} working days (excluding weekends and public holidays), as from the signing of this agreement.", contract_normal_style))
+    elements.append(Paragraph("4.6. Any delays caused by Force Majeure events or by the Buyer shall extend the delivery period accordingly.", contract_normal_style))
+    elements.append(Paragraph("4.7. If the seller fails to deliver the house within the set delivery date (4.5.), due to unforeseen delays, he is obliged to notify the buyer in writing, stating the reasons for the delay and proposing ways of overcoming the said delay.", contract_normal_style))
+    elements.append(Spacer(1, 6*mm))
+
+    # Termination
+    elements.append(Paragraph("5. Termination:", contract_subheading_style))
+    elements.append(Paragraph("5.1. In case the Buyer fails to fulfill any of the conditions of this agreement, the Seller has the right to terminate the agreement immediately, by sending a written notification explaining the reasons for such termination.", contract_normal_style))
+    elements.append(Paragraph("5.2. If the Buyer decides not to purchase the house by the given date, the Buyer acknowledges and undertakes that they will lose the entire deposit given as compensation for damages. In the event of a problem caused by the Seller or if the Seller decides not to transfer to the Buyer, the Seller will refund the full deposit to the Buyer.", contract_normal_style))
+    elements.append(Paragraph("5.3. All notices to be given under this agreement will be deemed to have been given or served by being left at the above-mentioned addresses of the parties or by being sent by post.", contract_normal_style))
+    elements.append(Paragraph("5.4. This agreement is made in 2 copies, signed and initialed by the parties.", contract_normal_style))
+    elements.append(Spacer(1, 6*mm))
+
+    # Notifications
+    elements.append(Paragraph("6. Notifications:", contract_subheading_style))
+    elements.append(Paragraph("The following shall be considered as valid notifications:", contract_normal_style))
+    elements.append(Paragraph("6.1. By regular mail", contract_list_style))
+    elements.append(Paragraph("6.2. By registered mail", contract_list_style))
+    elements.append(Paragraph("6.3. By double registered mail", contract_list_style))
+    elements.append(Paragraph("6.4. By email which shall be sent by the usual electronic email used by the parties", contract_list_style))
+    elements.append(Paragraph("6.5. By service via a bailiff", contract_list_style))
+    elements.append(Paragraph("6.6. By fax", contract_list_style))
+    elements.append(Paragraph("6.7. Telephone conversations, telephone messages (SMS), messages through viber, whats'app, facebook messenger and any other application/s not mentioned in this paragraph, shall not constitute a valid notice under above paragraph (4c).", contract_list_style))
+    elements.append(Spacer(1, 6*mm))
+
+    # Warranty and Defects liability - START ON NEW PAGE
+    elements.append(PageBreak())
+    elements.append(Paragraph("7. Warranty and Defects liability:", contract_subheading_style))
+    elements.append(Paragraph("7.1. The seller warrants that the house will be free if defects in materials and workmanship, for a period of ........ (months/year), from the day of delivery.", contract_normal_style))
+    elements.append(Paragraph("7.2. The said warrantee does not cover damages caused by misuse, negligence, or external factors (e.g. natural disasters).", contract_normal_style))
+    elements.append(Spacer(1, 6*mm))
+
+    # Applicable Law
+    elements.append(Paragraph("8. Applicable Law:", contract_subheading_style))
+    elements.append(Paragraph("This Agreement and any matter relating thereto shall be governed, construed and interpreted in accordance with the laws of the Republic of Cyprus any dispute arising under it shall be subject to the exclusive jurisdiction of the Cyprus courts.", contract_normal_style))
+    elements.append(Spacer(1, 6*mm))
+
+    # Dispute Resolution - Mediation / Arbitration
+    elements.append(Paragraph("9. Dispute Resolution - Mediation / Arbitration", contract_subheading_style))
+    elements.append(Paragraph("9.1. Any disputes arising under this Agreement and prior to any litigation before the relevant Court, will first be addressed through negotiation between the parties.", contract_normal_style))
+    elements.append(Paragraph("9.2. If the dispute cannot be resolved through negotiation, the parties agree to submit to mediation in the Republic of Cyprus, according to Mediation Act §159(1)/2012.", contract_normal_style))
+    elements.append(Paragraph("9.3. If mediation fails, the dispute will be resolved through binding arbitration under the rules of [Arbitration Organization].", contract_normal_style))
+    elements.append(Paragraph("9.4. The above alternative dispute resolution, do not conflict the Constitutional right of either party may seek relief in the courts of Cyprus if there will be no amicable settlement.", contract_normal_style))
+    elements.append(Spacer(1, 6*mm))
+
+    # Amendments
+    elements.append(Paragraph("10. Amendements:", contract_subheading_style))
+    elements.append(Paragraph("Any amendements or modifications to this agreement, must be made in writing and signed by both parties prior to a written notification as above (term 6).", contract_normal_style))
+    elements.append(Spacer(1, 6*mm))
+
+    # Final Clause
+    elements.append(Paragraph("11. This Agreement is made in two (2) identical copies in English language, with each party receiving one copy of the Agreement.", contract_normal_style))
+    elements.append(Spacer(1, 6*mm))
+
+    elements.append(Paragraph("IN WITNESS THEREOF, the parties have caused their authorized representatives to sign this Agreement on their behalf, the day and year above written.", contract_normal_style))
+    elements.append(Spacer(1, 25*mm))
+
+    # Final Signature Block
+    final_signature_data = [
+        [Paragraph(f"<b>THE SELLER</b><br/><br/><br/>________________________________________<br/>For and on behalf of<br/>{company_info['name'].upper()}", contract_signature_style),
+        Paragraph(f"<b>THE BUYER</b><br/><br/><br/>________________________________________<br/>{customer_info['name'].upper()}<br/>I.D. No: {customer_info.get('id_no', 'N/A')}", contract_signature_style)]
+    ]
+    final_signature_table = Table(final_signature_data, colWidths=[80*mm, 80*mm], hAlign='CENTER')
+    final_signature_table.setStyle(TableStyle([
+        ('VALIGN', (0,0), (-1,-1), 'TOP'),
+        ('LEFTPADDING', (0,0), (-1,-1), 0),
+        ('RIGHTPADDING', (0,0), (-1,-1), 0),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 0),
+        ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+    ]))
+    elements.append(final_signature_table)
+
+    elements.append(Spacer(1, 10*mm))
+    elements.append(Paragraph(f"Date: {datetime.now().strftime('%d/%m/%Y')}", contract_normal_style))
+
+    # Witnesses
+    elements.append(Spacer(1, 8*mm))
+    elements.append(Paragraph("Witnesses:", contract_normal_style))
+    elements.append(Spacer(1, 4*mm))
+    elements.append(Paragraph("1 (Sgn.) _____________________________________", contract_normal_style))
+    elements.append(Paragraph("(name and i.d.)", contract_normal_style))
+    elements.append(Spacer(1, 4*mm))
+    elements.append(Paragraph("2 (Sgn.) _____________________________________", contract_normal_style))
+    elements.append(Paragraph("(name and i.d.)", contract_normal_style))
+
+    elements.append(PageBreak())
+
+    # APPENDIX "A" - Scope of Work
+    elements.append(Paragraph("APPENDIX \"A\" - SCOPE OF WORK", contract_heading_style))
+    elements.append(Paragraph("Within the scope of this sales agreement, the specified Light Steel Structure House will have the following features and materials:", contract_normal_style))
+    elements.append(Spacer(1, 5*mm))
+
+    def get_yes_no_en(value):
+        return 'Yes' if value else 'No'
+
+    appendix_data = []
+    appendix_data.append([Paragraph("<b>Dimensions and Area:</b>", contract_subheading_style), Paragraph(f"The house has dimensions of {project_details['width']}m x {project_details['length']}m x {project_details['height']}m. It has a total area of {project_details['area']:.2f} m².", contract_normal_style)])
+
+    if project_details.get('is_two_story', False):
+        appendix_data.append([Paragraph("<b>Two-Story Building:</b>", contract_subheading_style), Paragraph(f"Yes. 2nd Floor Height: {project_details['height_2nd_floor']}m. 2nd Floor Room Configuration: {project_details.get('room_config_2nd_floor', 'N/A')}. Staircase included.", contract_normal_style)])
+
+
+    building_structure_details_appendix_en = ""
+    if project_details['structure_type'] == 'Light Steel':
+        profiles_en_str = ", ".join([f"{p['Item']} ({p['Quantity']} pieces)" for p in project_details.get('profile_analysis', []) if p['Quantity'] > 0])
+        building_structure_details_appendix_en = f"""
+        Skeleton: Box profile with dimensions of {profiles_en_str} will be used. Antirust will be applied to all box profiles and can be painted with the desired color. All our profile welding works have EN3834 certification in accordance with European standards. The construction operations of the entire building are subject to European standards and EN 1090-1 Light Steel Construction license inspection.
+        """
+    else: # Heavy Steel
+        building_structure_details_appendix_en = f"""
+        Skeleton: Steel house frame with all necessary cross-sections (columns, beams), including connection components (flanges, screws, bolts), all as static drawings.
+        HEA120 OR HEA160 Heavy metal will be used in models with title deed and construction permit. All non-galvanized metal surfaces will be sandblasted according to the Swedish standard Sa 2.5 and will be coated with a zincphosphate primer 80μm thick.
+        Anti-rust will be applied to all profiles and can be painted in the desired color.
+        All our profile welding works have EN3834 certificate in accordance with European standards. All construction processes of the building are subject to European standards and EN 1090-1 Steel Construction license inspection.
+        """
+    appendix_data.append([Paragraph("<b>Construction Materials:</b>", contract_subheading_style), Paragraph(building_structure_details_appendix_en, contract_normal_style)])
+
+    appendix_data.append([Paragraph("<b>Interior and Exterior Covering:</b>", contract_subheading_style), Paragraph(f"Floor Covering: {project_details.get('floor_covering_type', 'N/A')}. Inner Wall OSB: {get_yes_no_en(project_details.get('osb_inner_wall', False))}. Interior Walls: Plasterboard {get_yes_no_en(project_details.get('plasterboard_interior', False) or project_details.get('plasterboard_all', False))}.", contract_normal_style)])
+    appendix_data.append([Paragraph("<b>Insulation:</b>", contract_subheading_style), Paragraph(f"Floor Insulation: {get_yes_no_en(project_details.get('insulation_floor', False))}. Wall Insulation: {get_yes_no_en(project_details.get('insulation_wall', False))}.", contract_normal_style)])
+    appendix_data.append([Paragraph("<b>Floor Coverings:</b>", contract_subheading_style), Paragraph(f"{project_details.get('floor_covering_type', 'N/A')} will be used for floor coverings.", contract_normal_style)])
+    appendix_data.append([Paragraph("<b>Roof Covering:</b>", contract_subheading_style), Paragraph("100mm Sandwich Panel will be used for the roof.", contract_normal_style)])
+
+    if project_details.get('plumbing', False):
+        appendix_data.append([Paragraph("<b>Plumbing:</b>", contract_subheading_style), Paragraph(f"Plumbing installation {'' if project_details['plumbing'] else 'does NOT'} include external water connection. {PLUMBING_MATERIALS_EN.strip()}", contract_normal_style)])
+    else:
+        appendix_data.append([Paragraph("<b>Plumbing:</b>", contract_subheading_style), Paragraph("Not Included", contract_normal_style)])
+
+
+    if project_details.get('electrical', False):
+        appendix_data.append([Paragraph("<b>Electrical:</b>", contract_subheading_style), Paragraph(f"Electrical installation {'' if project_details['electrical'] else 'does NOT'} include external connection. {ELECTRICAL_MATERIALS_EN.strip()}", contract_normal_style)])
+    else:
+        appendix_data.append([Paragraph("<b>Electrical:</b>", contract_subheading_style), Paragraph("Not Included", contract_normal_style)])
+
+
+    appendix_data.append([Paragraph("<b>Windows and Doors:</b>", contract_subheading_style), Paragraph(f"Aluminum windows and doors of various sizes will be used, with a height of 2.00m. Color: {project_details.get('window_door_color_val', 'N/A')}. The following windows and doors will be included in this project:<br/>Windows: {project_details.get('window_count', 0)} ({project_details.get('window_size_val', 'N/A')})<br/>Sliding Doors: {project_details.get('sliding_door_count', 0)} ({project_details.get('sliding_door_size_val', 'N/A')})<br/>WC Windows: {project_details.get('wc_window_count', 0)} ({project_details.get('wc_window_size_val', 'N/A')}){'' if project_details.get('wc_sliding_door_count', 0) == 0 else '<br/>WC Sliding Doors: ' + str(project_details['wc_sliding_door_count']) + ' (' + project_details['wc_sliding_door_size_val'] + ')'}<br/>Doors: {project_details.get('door_count', 0)} ({project_details.get('door_size_val', 'N/A')})", contract_normal_style)])
+
+    additional_features_text = []
+    if project_details.get('kitchen_choice', 'No Kitchen') != 'No Kitchen':
+        additional_features_text.append(f"Kitchen: {get_yes_no_en(project_details['kitchen_choice'] != 'No Kitchen')} ({project_details['kitchen_type_display_en_gr']})")
+        additional_features_text.append(KITCHEN_MATERIALS_EN.replace('\n', '<br/>'))
+    else:
+        additional_features_text.append("Kitchen: Not Included")
+
+    if project_details.get('shower_wc', False):
+        additional_features_text.append(f"Shower/WC: {get_yes_no_en(project_details['shower_wc'])}")
+        additional_features_text.append(SHOWER_WC_MATERIALS_EN.replace('\n', '<br/>'))
+    else:
+        additional_features_text.append("Shower/WC: Not Included")
+
+    if project_details.get('heating', False):
+        additional_features_text.append(f"Floor Heating: {get_yes_no_en(project_details['heating'])}")
+    if project_details.get('solar', False):
+        additional_features_text.append(f"Solar: {get_yes_no_en(project_details['solar'])} ({project_details['solar_kw']} kW)")
+    if project_details.get('aether_package_choice', 'None') != 'None':
+        additional_features_text.append(f"Aether Package: {get_yes_no_en(project_details['aether_package_choice'] != 'None')}")
+    if project_details.get('wheeled_trailer', False):
+        additional_features_text.append(f"Wheeled Trailer: {get_yes_no_en(project_details['wheeled_trailer'])} ({format_currency(project_details['wheeled_trailer_price'])})")
+    if project_details.get('extra_expenses_info', {}).get('amount', 0) > 0:
+        extra_desc_en = project_details['extra_expenses_info'].get('description', 'Unspecified Extra Expenses')
+        additional_features_text.append(f"Extra Expenses: {extra_desc_en} ({format_currency(project_details['extra_expenses_info']['amount'])})")
+    if project_details.get('transportation_count', 0) > 0:
+        additional_features_text.append(f"Transportation: Included ({project_details['transportation_count']} trips)")
+    if project_details.get('is_two_story', False):
+        additional_features_text.append(f"Two-Story Building: Yes. 2nd Floor Height: {project_details['height_2nd_floor']}m. 2nd Floor Room Configuration: {project_details['room_config_2nd_floor']}. Staircase included.")
+
+
+    if additional_features_text:
+        appendix_data.append([Paragraph("<b>Additional Features:</b>", contract_subheading_style), Paragraph("<br/>".join(additional_features_text), contract_normal_style)])
+
+    appendix_table = Table(appendix_data, colWidths=[40*mm, 130*mm])
+    appendix_table.setStyle(TableStyle([
+        ('VALIGN', (0,0), (-1,-1), 'TOP'),
+        ('LEFTPADDING', (0,0), (-1,-1), 0),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 4),
+        ('LINEBELOW', (0,0), (-1,-2), 0.5, colors.grey),
+    ]))
+    elements.append(appendix_table)
+
+
     doc.build(elements)
     buffer.seek(0)
     return buffer.getvalue()
