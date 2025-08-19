@@ -561,9 +561,6 @@ def create_customer_proposal_pdf_en_gr(house_price, solar_price, aether_package_
         aether_elements = _create_aether_appendix_elements_en_gr(styles, project_details)
         elements.extend(aether_elements)
 def create_internal_cost_report_pdf(cost_breakdown_df, financial_summary_df, profile_analysis_df, project_details, customer_info, logo_data_b64):
-    """
-    Türkçe dahili maliyet raporu PDF'i oluşturur.
-    """
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(
         buffer,
@@ -690,7 +687,7 @@ def create_internal_cost_report_pdf(cost_breakdown_df, financial_summary_df, pro
     ]))
     elements.append(financial_table)
 
-    def create_sales_contract_pdf(customer_info, house_sales_price, solar_sales_price, aether_package_sales_price, project_details, company_info, extra_expenses_info):
+def create_sales_contract_pdf(customer_info, house_sales_price, solar_sales_price, aether_package_sales_price, project_details, company_info, extra_expenses_info):
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(
         buffer,
