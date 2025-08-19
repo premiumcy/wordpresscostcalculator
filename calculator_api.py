@@ -23,7 +23,7 @@ import io
 
 # Projenin diğer dosyalarını içe aktar
 from config import FIYATLAR, COMPANY_INFO, MATERIAL_INFO_ITEMS, TRANSLATIONS
-from pdf_generator import create_internal_cost_report_pdf, create_customer_proposal_pdf_tr, create_customer_proposal_pdf_en_gr, create_sales_contract_pdf
+from pdf_generator import create_internal_cost_report_pdf, create_customer_proposal_pdf_en_gr, create_sales_contract_pdf
 from calculator import calculate_costs_detailed
 from utils import clean_invisible_chars, calculate_area, get_company_logo_base64
 
