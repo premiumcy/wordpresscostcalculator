@@ -194,7 +194,6 @@ def _create_aether_appendix_elements_en_gr(styles, project_details):
     return elements
 
 def create_customer_proposal_pdf_en_gr(house_price, solar_price, aether_package_price, total_price, project_details, customer_info, extra_expenses_info, logo_data_b64):
-    """Müşteri için profesyonel bir teklif PDF'i oluşturur (İngilizce ve Yunanca)."""
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(
         buffer,
