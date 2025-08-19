@@ -4,8 +4,10 @@
 import math
 import pandas as pd
 import re
-from .config import FIYATLAR, MONTHLY_ACCOUNTING_EXPENSES, MONTHLY_OFFICE_RENT, FIRE_RATE, VAT_RATE, MATERIAL_INFO_ITEMS, OSB_PANEL_AREA_M2, GYPSUM_BOARD_UNIT_AREA_M2, GLASS_WOOL_M2_PER_PACKET
-from .utils import calculate_rounded_up_cost, calculate_area, clean_invisible_chars, format_currency
+# Göreceli içe aktarma hatasını gidermek için noktalar (.) kaldırıldı.
+from config import FIYATLAR, MONTHLY_ACCOUNTING_EXPENSES, MONTHLY_OFFICE_RENT, FIRE_RATE, VAT_RATE, MATERIAL_INFO_ITEMS, OSB_PANEL_AREA_M2, GYPSUM_BOARD_UNIT_AREA_M2, GLASS_WOOL_M2_PER_PACKET
+from utils import calculate_rounded_up_cost, calculate_area, clean_invisible_chars, format_currency, get_company_logo_base64
+
 
 def calculate_costs_detailed(project_inputs, areas):
     """
