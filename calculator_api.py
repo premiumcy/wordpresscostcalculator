@@ -23,7 +23,7 @@ import io
 
 # Projenin diğer dosyalarını içe aktar
 from config import FIYATLAR, COMPANY_INFO, MATERIAL_INFO_ITEMS, TRANSLATIONS
-from pdf_generator import create_internal_cost_report_pdf, create_customer_proposal_pdf_en_gr,create_sales_contract_pdf
+from pdf_generator import create_internal_cost_report_pdf, create_customer_proposal_pdf_tr, create_customer_proposal_pdf_en_gr, create_sales_contract_pdf
 from calculator import calculate_costs_detailed
 from utils import clean_invisible_chars, calculate_area, get_company_logo_base64
 
@@ -92,6 +92,38 @@ def calculate_and_generate_pdfs():
         # Müşteri ve proje verilerini al
         customer_info = data.get('customer_info', {})
         project_details = data.get('project_details', {})
+        
+        # HTML formunda olmayan ancak API'nin beklediği değerler için varsayılan değerler
+        project_details['id_no'] = customer_info.get('id_no', 'N/A')
+        project_details['height_2nd_floor'] = project_details.get('height_2nd_floor', 0)
+        project_details['room_config_2nd_floor'] = project_details.get('room_config_2nd_floor', 'N/A')
+        project_details['plasterboard_interior'] = project_details.get('plasterboard_interior', False)
+        project_details['plasterboard_all'] = project_details.get('plasterboard_all', False)
+        project_details['facade_sandwich_panel_included'] = project_details.get('facade_sandwich_panel_included', False)
+        project_details['osb_inner_wall_option'] = project_details.get('osb_inner_wall_option', False)
+        project_details['insulation_wall'] = project_details.get('insulation_wall', False)
+        project_details['insulation_floor'] = project_details.get('insulation_floor', False)
+        project_details['skirting_length_val'] = project_details.get('skirting_length_val', 0)
+        project_details['laminate_flooring_m2_val'] = project_details.get('laminate_flooring_m2_val', 0)
+        project_details['under_parquet_mat_m2_val'] = project_details.get('under_parquet_mat_m2_val', 0)
+        project_details['osb2_18mm_count_val'] = project_details.get('osb2_18mm_count_val', 0)
+        project_details['galvanized_sheet_m2_val'] = project_details.get('galvanized_sheet_m2_val', 0)
+        project_details['concrete_panel_floor_option'] = project_details.get('concrete_panel_floor_option', False)
+        project_details['concrete_panel_floor_m2_val'] = project_details.get('concrete_panel_floor_m2_val', 0)
+        project_details['terrace_laminated_wood_flooring_option'] = project_details.get('terrace_laminated_wood_flooring_option', False)
+        project_details['terrace_laminated_wood_flooring_m2_val'] = project_details.get('terrace_laminated_wood_flooring_m2_val', 0)
+        project_details['porcelain_tiles_option'] = project_details.get('porcelain_tiles_option', False)
+        project_details['porcelain_tiles_m2_val'] = project_details.get('porcelain_tiles_m2_val', 0)
+        project_details['wheeled_trailer'] = project_details.get('wheeled_trailer', False)
+        project_details['wheeled_trailer_price'] = project_details.get('wheeled_trailer_price', 0)
+        project_details['solar_kw'] = project_details.get('solar_kw', 0)
+        project_details['solar'] = project_details.get('solar', False)
+        project_details['extra_expenses_info'] = project_details.get('extra_expenses_info', {'description': '', 'amount': 0})
+        project_details['transportation_count'] = project_details.get('transportation_count', 0)
+        project_details['heating'] = project_details.get('heating', False)
+        project_details['aether_package_choice'] = project_details.get('aether_package_choice', 'None')
+        project_details['room_config_2nd_floor'] = project_details.get('room_config_2nd_floor', 'N/A')
+        project_details['height_2nd_floor'] = project_details.get('height_2nd_floor', 0)
 
         # Gelen verilerle hesaplama motorunu çalıştır
         areas = calculate_area(
@@ -114,18 +146,7 @@ def calculate_and_generate_pdfs():
             results.get('logo_data_b64', None)
         )
         
-        if project_details.get('pdf_language', 'tr') == 'tr':
-            customer_proposal_data = create_customer_proposal_pdf_tr(
-                results['house_sales_price'],
-                results['solar_sales_price'],
-                results['aether_package_sales_price'],
-                results['total_sales_price'],
-                project_details,
-                customer_info,
-                results['extra_expenses_info'],
-                results.get('logo_data_b64', None)
-            )
-        else:
+        if project_details.get('pdf_language', 'en_gr') == 'en_gr':
             customer_proposal_data = create_customer_proposal_pdf_en_gr(
                 results['house_sales_price'],
                 results['solar_sales_price'],
@@ -136,6 +157,18 @@ def calculate_and_generate_pdfs():
                 results['extra_expenses_info'],
                 results.get('logo_data_b64', None)
             )
+        else: # Türkçe dil seçeneği
+             customer_proposal_data = create_customer_proposal_pdf_tr(
+                results['house_sales_price'],
+                results['solar_sales_price'],
+                results['aether_package_sales_price'],
+                results['total_sales_price'],
+                project_details,
+                customer_info,
+                results['extra_expenses_info'],
+                results.get('logo_data_b64', None)
+            )
+
 
         sales_contract_data = create_sales_contract_pdf(
             customer_info,
